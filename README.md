@@ -4,7 +4,7 @@
 
 ## Overview
 
-The official platform for the University of Delaware Data Science Student Association (UDSSA) and DSI Fellows. We showcase member profiles, facilitate donations, market our services, and organize meaningful workshops and networking events to build the next generation of data scientists.
+The official platform for the University of Delaware Data Science Student Association (UDSSA). We showcase member profiles, facilitate donations, market our services, and organize meaningful workshops and networking events to build the next generation of data scientists and raise the profile of UD's data science community.
 
 ## Purpose
 
