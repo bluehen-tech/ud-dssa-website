@@ -172,3 +172,70 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next/
+out/
+*.log
+.DS_Store
+
+# Build files
+/build/
+dist/
+
+# Vercel
+.vercel/
+.vscode/
+
+# Sanity.io
+.sanity/
+sanity.json
+sanity.cli.js
+
+# MongoDB and Supabase
+.env.local
+.env.development.local
+.env.production.local
+
+# Ignore database dumps or sensitive data files
+*.dump
+*.sql
+database.json
+
+# Stripe secret keys
+stripe_key.json
+
+# NextAuth.js
+session.json
+
+# Logs and error tracking
+*.log
+*.gz
+*.zip
+*.bak
+
+# Analytics cache (optional)
+analytics.cache
+
+# Editor settings and OS files
+*.swp
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.bak
+Thumbs.db
+.DS_Store
+
+# Test files
+coverage/
+*.lcov
+
+# Email Marketing/Forms (if using cached data)
+mailerlite_cache/
+
