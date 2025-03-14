@@ -1,17 +1,17 @@
 # BlueHen.tech
 
-> Home of the UD Data Science Student Association: amplifying student visibility, connecting industry partners, attracting donations, hosting transformative events, and showcasing our composable/headless architecture.
+> Home of the UD Data Science Student Association: amplifying student visibility, connecting industry partners, attracting donations, hosting transformative events, and showcasing our tech stack built with a modern composable/headless architecture.
 
 ## Overview
 
-The official platform for the University of Delaware Data Science Student Association (UDSSA) and DSI Fellows. We showcase member profiles, facilitate donations, market our services, and organize cutting-edge workshops, hackathons, and networking events to build the next generation of data scientists.
+The official platform for the University of Delaware Data Science Student Association (UDSSA) and DSI Fellows. We showcase member profiles, facilitate donations, market our services, and organize meaningful workshops and networking events to build the next generation of data scientists.
 
 ## Purpose
 
 - **Member Portfolios**: Showcase student skills and projects
 - **Donation Management**: Support our activities through easy donation options
-- **Service Marketing**: Highlight data science services offered by our members
-- **Event Broadcasting**: Promote workshops, hackathons, and networking events
+- **Service Marketing**: Highlight data science services offered by our members and organization
+- **Event Broadcasting**: Promote workshops and networking events
 
 ## Tech Stack
 
@@ -27,14 +27,14 @@ The official platform for the University of Delaware Data Science Student Associ
 
 ### Data Science Methods
 - **Next-Gen AI**: Teaching computers to understand text, images, and speech together like humans do
-- **Advanced Data Visualization**: Creating interactive 3D visualizations that reveal hidden patterns in complex data
-- **Smart Prediction**: Building systems that can make accurate forecasts with minimal historical data
+- **Advanced Data Visualization**: Creating interactive and insightful visualizations that reveal hidden patterns in complex data
+- **Smart Prediction**: Building systems that can make accurate forecasts with minimal data or exceptionally large datasets
 - **Cause-and-Effect Analysis**: Using AI to understand what truly drives outcomes, not just correlations
 - **Automated Discovery**: Teaching algorithms to find patterns humans might miss in massive datasets
 - **Computer Vision+**: Training models to not just see objects but understand context and relationships
 - **AI That Explains Itself**: Creating transparent models that can justify their recommendations
 
-## Development
+## Contributing to bluehen.tech Development
 
 ### Getting Started
 
