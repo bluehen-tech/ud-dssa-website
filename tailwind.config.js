@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'blue-hen': '#00539F', // UD Blue
+        'blue-primary': '#00539F', // UD Blue
         'gold': '#FFD200', // UD Gold
       },
     },
