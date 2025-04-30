@@ -26,7 +26,7 @@ export default function Home() {
         <div className="bg-gray-50 p-8 rounded-lg">
           <h2 className="text-3xl font-bold text-blue-primary mb-4">Our Mission</h2>
           <p className="text-lg text-gray-700">
-            The UD Data Science Student Association aims to connect students with industry partners, 
+            The UD Data Science Student Association aims to connect graduatestudents with industry partners, 
             showcase member skills, facilitate learning opportunities, and build a strong data science 
             community at the University of Delaware.
           </p>
