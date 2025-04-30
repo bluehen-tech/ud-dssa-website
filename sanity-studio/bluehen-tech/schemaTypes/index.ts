@@ -1,15 +1,35 @@
-import homePage from './homePage'
-import aboutPage from './aboutPage'
-import contactPage from './contactPage'
-import teamMember from './teamMember'
-import navigation from './navigation'
-import footer from './footer'
+import { type SchemaTypeDefinition } from 'sanity'
 
-export const schemaTypes = [
-  homePage,
-  aboutPage,
-  contactPage,
-  teamMember,
-  navigation,
-  footer,
-]
+const page: SchemaTypeDefinition = {
+  name: 'page',
+  title: 'Page',
+  type: 'document',
+  fields: [
+    {
+      name: 'title',
+      title: 'Title',
+      type: 'string',
+      validation: (Rule) => Rule.required(),
+    },
+    {
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: {
+        source: 'title',
+        maxLength: 96,
+      },
+      validation: (Rule) => Rule.required(),
+    },
+    {
+      name: 'content',
+      title: 'Content',
+      type: 'array',
+      of: [{ type: 'block' }],
+    },
+  ],
+}
+
+export const schemaTypes: SchemaTypeDefinition[] = [page]
+
+export default schemaTypes

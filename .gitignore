@@ -239,3 +239,4 @@ coverage/
 # Email Marketing/Forms (if using cached data)
 mailerlite_cache/
 
+.vercel
