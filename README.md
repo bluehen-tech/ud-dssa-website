@@ -6,6 +6,8 @@
 
 The official platform for the University of Delaware Data Science Student Association (UDSSA). We showcase member profiles, facilitate donations, market our services, and organize meaningful workshops and networking events to build the next generation of data scientists and raise the profile of UD's data science community.
 
+**Student-Friendly Design**: This project is intentionally built to be simple and accessible for student contributors. All content is managed through easy-to-edit TypeScript files, making it perfect for students rotating in and out of the project.
+
 ## Project Structure
 
 ```
@@ -23,13 +25,11 @@ ud-dssa-website/
 │   │   └── layout/       # Layout components
 │   │       ├── Header.tsx
 │   │       └── Footer.tsx
-│   └── lib/              # Utility functions
-│       └── sanity/       # Sanity.io integration
-│           ├── client.ts
-│           ├── queries.ts
-│           ├── sanity.utils.ts
-│           └── types.ts
-├── sanity-studio/        # Sanity Studio (CMS)
+│   └── data/             # Content data (easy to edit!)
+│       ├── team.ts       # Team member information
+│       ├── events.ts     # Event listings
+│       ├── services.ts   # Service offerings
+│       └── index.ts      # Data exports
 ├── .next/                # Next.js build output
 ├── node_modules/         # Dependencies
 ├── package.json          # Project configuration
@@ -46,7 +46,7 @@ ud-dssa-website/
 
 - **Framework**: Next.js with TypeScript
 - **Styling**: Tailwind CSS
-- **Content Management**: Sanity.io
+- **Content Management**: Static TypeScript files (student-friendly!)
 - **Deployment**: Vercel
 
 ## Getting Started
@@ -59,42 +59,31 @@ git clone https://github.com/your-org/ud-dssa-website.git
 cd ud-dssa-website
 npm install
 
-# Set up environment variables
-# Create a .env.local file with your Sanity credentials
-cp .env.example .env.local
-# Edit .env.local with your Sanity project ID and dataset
-
 # Run the development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Sanity.io Setup
+## Content Management
 
-This project uses Sanity.io as a headless CMS. To set up Sanity:
+This project uses a **student-friendly approach** to content management. All content is stored in simple TypeScript files that are easy to edit:
 
-1. Create a Sanity account at [sanity.io](https://www.sanity.io/)
-2. Create a new project in Sanity
-3. Get your project ID from the Sanity dashboard
-4. Add your project ID to the `.env.local` file:
+### Adding Team Members
+Edit `src/data/team.ts` to add or update team member information.
 
-```
-NEXT_PUBLIC_SANITY_PROJECT_ID=your_project_id
-NEXT_PUBLIC_SANITY_DATASET=production
-NEXT_PUBLIC_SANITY_API_VERSION=2023-05-03
-```
+### Managing Events
+Edit `src/data/events.ts` to add upcoming events or archive past ones.
 
-5. Run the Sanity Studio locally:
+### Updating Services
+Edit `src/data/services.ts` to modify service offerings and pricing.
 
-```bash
-cd sanity-studio
-npm install
-npm run dev
-```
-
-6. Access the Sanity Studio at [http://localhost:3333](http://localhost:3333)
-7. Create content in Sanity Studio that matches the schemas defined in the project
+### Benefits of This Approach
+- ✅ **No CMS learning curve** - Just edit TypeScript files
+- ✅ **Version controlled** - All changes tracked in Git
+- ✅ **No external dependencies** - No need for Sanity accounts or API keys
+- ✅ **Student-friendly** - Easy for new contributors to understand
+- ✅ **Fast development** - No need to set up external services
 
 ## Vercel Deployment
 
@@ -104,10 +93,7 @@ To deploy this project to Vercel:
 2. Install the Vercel CLI: `npm install -g vercel`
 3. Run `vercel login` and follow the prompts
 4. From the project root, run `vercel` to deploy
-5. Set up environment variables in the Vercel dashboard:
-   - NEXT_PUBLIC_SANITY_PROJECT_ID
-   - NEXT_PUBLIC_SANITY_DATASET
-   - NEXT_PUBLIC_SANITY_API_VERSION
+5. Deploy! No environment variables needed for this simplified setup.
 
 ## Contributing
 

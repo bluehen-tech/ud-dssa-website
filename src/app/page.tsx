@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import ContactForm from '@/components/ContactForm';
 
 export default function Home() {
   return (
@@ -26,9 +27,7 @@ export default function Home() {
         <div className="bg-gray-50 p-8 rounded-lg">
           <h2 className="text-3xl font-bold text-blue-primary mb-4">Our Mission</h2>
           <p className="text-lg text-gray-700">
-            The UD Data Science Student Association aims to connect students with industry partners, 
-            showcase member skills, facilitate learning opportunities, and build a strong data science 
-            community at the University of Delaware.
+          The UD Data Science Student Association showcases our graduate talent, fosters cross-disciplinary learning, and builds a vibrant data science community through collaboration and industry partnerships at the University of Delaware.
           </p>
         </div>
 
@@ -49,19 +48,16 @@ export default function Home() {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center">
+        <div className="text-center mb-12">
           <h2 className="text-2xl font-bold text-blue-primary mb-4">Ready to join the data revolution?</h2>
           <p className="text-lg text-gray-600 mb-6">
             Whether you're just starting your data science journey or looking to expand your network,
             UDSSA has something for you.
           </p>
-          <Link 
-            href="/about" 
-            className="px-6 py-3 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors"
-          >
-            Get in Touch
-          </Link>
         </div>
+
+        {/* Contact Form */}
+        <ContactForm />
       </div>
     </div>
   );
