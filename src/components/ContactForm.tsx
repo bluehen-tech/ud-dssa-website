@@ -105,7 +105,9 @@ export default function ContactForm() {
   };
 
   const handleClubToggle = (clubId: string) => {
-    const currentClubs = (formData.selectedClubs || []);
+    if (formData.userType !== 'ud-grad-student') return;
+    
+    const currentClubs = ((formData as UDGradStudentForm).selectedClubs || []);
     const newClubs = currentClubs.includes(clubId)
       ? currentClubs.filter(id => id !== clubId)
       : [...currentClubs, clubId];
