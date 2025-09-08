@@ -1,5 +1,19 @@
 {
-  "submissions": [],
+  "submissions": [
+    {
+      "id": "1757361908890",
+      "userType": "ud-grad-student",
+      "email": "ajf@udel.edu",
+      "selectedClubs": [
+        "1"
+      ],
+      "major": "test",
+      "graduationMonth": "March",
+      "graduationYear": "2028",
+      "submittedAt": "2025-09-08T20:05:08.890Z",
+      "status": "active"
+    }
+  ],
   "unsubscribed": [],
-  "lastUpdated": null
+  "lastUpdated": "2025-09-08T20:05:08.890Z"
 }
