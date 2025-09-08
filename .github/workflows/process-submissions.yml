@@ -1,0 +1,76 @@
+name: Process Form Submissions
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  process-submissions:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Process new submissions
+      run: |
+        # Get all pending form submission issues
+        ISSUES=$(gh issue list --label "pending-processing" --json number,title,body,labels --jq '.[] | select(.labels[].name == "form-submission")')
+        
+        if [ -z "$ISSUES" ]; then
+          echo "No pending submissions to process"
+          exit 0
+        fi
+        
+        echo "$ISSUES" | jq -r '.number' | while read issue_number; do
+          echo "Processing issue #$issue_number"
+          
+          # Get issue details
+          ISSUE_DATA=$(gh issue view $issue_number --json title,body,labels)
+          EMAIL=$(echo "$ISSUE_DATA" | jq -r '.title' | sed 's/Form Submission: //')
+          
+          # Extract JSON data from issue body
+          JSON_DATA=$(echo "$ISSUE_DATA" | jq -r '.body' | sed -n '/```json/,/```/p' | sed '1d;$d')
+          
+          if [ -n "$JSON_DATA" ]; then
+            # Read current submissions.json
+            if [ -f "src/data/submissions.json" ]; then
+              CURRENT_DATA=$(cat src/data/submissions.json)
+            else
+              CURRENT_DATA='{"submissions":[],"unsubscribed":[],"lastUpdated":null}'
+            fi
+            
+            # Add new submission
+            NEW_SUBMISSION=$(echo "$JSON_DATA" | jq --arg id "$(date +%s)" --arg submittedAt "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" '. + {id: $id, submittedAt: $submittedAt, status: "active"}')
+            
+            UPDATED_DATA=$(echo "$CURRENT_DATA" | jq --argjson new "$NEW_SUBMISSION" '.submissions += [$new] | .lastUpdated = now | .lastUpdated = (.lastUpdated | strftime("%Y-%m-%dT%H:%M:%S.%3NZ"))')
+            
+            # Write back to file
+            echo "$UPDATED_DATA" > src/data/submissions.json
+            
+            # Commit changes
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add src/data/submissions.json
+            git commit -m "Add form submission from $EMAIL (Issue #$issue_number)"
+            git push
+            
+            # Update issue labels
+            gh issue edit $issue_number --remove-label "pending-processing" --add-label "processed"
+            
+            echo "Successfully processed submission from $EMAIL"
+          else
+            echo "No valid JSON data found in issue #$issue_number"
+            gh issue edit $issue_number --remove-label "pending-processing" --add-label "invalid-data"
+          fi
+        done
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

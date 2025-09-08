@@ -63,14 +63,24 @@ export default function ContactForm() {
     setSubmitResult(null);
 
     try {
-      // Simulate form submission (replace with actual API call)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Submit form to API
+      const response = await fetch('/api/submit-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
       
-      console.log('Form submitted:', formData);
+      if (!response.ok) {
+        throw new Error(result.message || 'Submission failed');
+      }
       
       setSubmitResult({
         success: true,
-        message: 'Thank you for your interest! We\'ll be in touch soon.'
+        message: result.message
       });
       
       // Reset form

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,28 +11,45 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Read current data
-    const dataPath = path.join(process.cwd(), 'src/data/submissions.json');
-    const currentData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    
-    // Add to unsubscribed list
-    if (!currentData.unsubscribed.includes(email)) {
-      currentData.unsubscribed.push(email);
+    // Create GitHub issue for unsubscribe request (no race conditions!)
+    const issueTitle = `Unsubscribe Request: ${email}`;
+    const issueBody = `
+## Unsubscribe Request
+
+**Email:** ${email}
+**Requested:** ${new Date().toISOString()}
+
+---
+*This issue will be automatically processed by GitHub Actions to update the submissions.json file.*
+    `;
+
+    const githubResponse = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPO_OWNER}/${process.env.GITHUB_REPO_NAME}/issues`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: issueTitle,
+        body: issueBody,
+        labels: ['unsubscribe-request', 'pending-processing']
+      })
+    });
+
+    if (!githubResponse.ok) {
+      const error = await githubResponse.text();
+      console.error('GitHub API error:', error);
+      throw new Error('Failed to create unsubscribe request');
     }
-    
-    // Update submission status
-    currentData.submissions = currentData.submissions.map((sub: any) => 
-      sub.email === email ? { ...sub, status: 'unsubscribed' } : sub
-    );
-    
-    currentData.lastUpdated = new Date().toISOString();
-    
-    // Write back to file
-    fs.writeFileSync(dataPath, JSON.stringify(currentData, null, 2));
-    
+
+    const issue = await githubResponse.json();
+    console.log('Created unsubscribe request:', issue.html_url);
+
     return NextResponse.json({ 
       success: true, 
-      message: 'You have been successfully unsubscribed.' 
+      message: 'You have been successfully unsubscribed.',
+      issueUrl: issue.html_url
     });
 
   } catch (error) {
