@@ -27,7 +27,7 @@ export default function Home() {
         <div className="bg-gray-50 p-8 rounded-lg">
           <h2 className="text-3xl font-bold text-blue-primary mb-4">Our Mission</h2>
           <p className="text-lg text-gray-700">
-          The UD Data Science Student Association showcases our graduate talent, fosters cross-disciplinary learning, and builds a vibrant data science community through collaboration and industry partnerships at the University of Delaware.
+            The UD Data Science Student Association showcases our graduate talent, fosters cross-disciplinary learning, and builds a vibrant data science community through collaboration and industry partnerships at the University of Delaware.
           </p>
         </div>
 
