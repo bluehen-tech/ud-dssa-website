@@ -32,8 +32,8 @@ export const dataScienceClubs: Club[] = [
   },
   {
     id: '5',
-    name: 'YOUR CLUB - Email dsi-info@udel.edu',
-    description: 'Email us to have your club added to the list.',
+    name: 'ADD YOUR CLUB',
+    description: 'Email us at dsi-info@udel.edu to have your club added to the list.',
     category: 'professional'
   },
 ];
