@@ -5,10 +5,12 @@ export interface BaseContactForm {
 
 export interface UDGradStudentForm extends BaseContactForm {
   userType: 'ud-grad-student';
+  fullName: string;
   major: string;
   selectedClubs: string[];
   graduationMonth: string;
   graduationYear: string;
+  interestedInOfficer?: boolean;
 }
 
 export interface IndustryAcademicForm extends BaseContactForm {
