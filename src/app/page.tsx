@@ -100,8 +100,7 @@ export default function Home() {
             </button>
           </div>
           <p className="text-lg text-gray-600 mb-6">
-            Whether you're a graduate student showcasing your projects, discovering events, and building infrastructure, or an industry professional looking to collaborate with and develop UD's graduate talent,
-            UDSSA has something for you.
+            Whether you're a graduate student showcasing your projects, discovering events, and building infrastructure, or an industry professional looking to collaborate with and develop UD's graduate talent, UDSSA has something for you.
           </p>
         </div>
 

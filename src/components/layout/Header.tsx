@@ -28,6 +28,9 @@ export default function Header() {
               <Link href="/" className="text-2xl font-bold text-blue-primary">
                 UDSSA
               </Link>
+              <span className="ml-2 text-sm text-gray-600 hidden sm:block">
+                @ University of Delaware
+              </span>
             </div>
             <nav className="hidden md:ml-6 md:flex md:space-x-8">
               <Link href="/" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">

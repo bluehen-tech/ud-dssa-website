@@ -9,7 +9,8 @@ export default function ContactForm() {
     userType: 'ud-grad-student',
     email: '',
     fullName: '',
-    selectedClubs: ['1'] // Auto-select UDSSA by default
+    selectedClubs: ['1'], // Auto-select UDSSA by default
+    interestedInOfficer: false
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,7 +96,8 @@ export default function ContactForm() {
           userType: 'ud-grad-student',
           email: '',
           fullName: '',
-          selectedClubs: ['1'] // Auto-select UDSSA on reset
+          selectedClubs: ['1'], // Auto-select UDSSA on reset
+          interestedInOfficer: false
         });
         setSubmitResult(null);
       }, 15000); // Show confirmation for 15 seconds
@@ -279,6 +281,26 @@ export default function ContactForm() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Leadership Interest */}
+            <div>
+              <label className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  checked={(formData as Partial<UDGradStudentForm>).interestedInOfficer || false}
+                  onChange={(e) => handleInputChange('interestedInOfficer', e.target.checked)}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">
+                    Interested in UDSSA Leadership Position
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Help lead the organization and shape the future of UD's data science community
+                  </div>
+                </div>
+              </label>
             </div>
 
             {/* Graduation Date */}
