@@ -12,6 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "dotenv": "^17.2.2",
     "next": "14.1.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"

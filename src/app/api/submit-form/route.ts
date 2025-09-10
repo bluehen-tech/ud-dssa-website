@@ -1,70 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContactFormData } from '@/types/contact';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
     const formData: ContactFormData = await request.json();
     
-    // Create GitHub issue with form data (no race conditions!)
-    const issueTitle = `Form Submission: ${formData.email}`;
-    
-    const issueBody = `
-## Contact Form Submission
+    // Prepare data for Supabase insertion
+    const submissionData = {
+      user_type: formData.userType,
+      email: formData.email,
+      full_name: (formData as any).fullName || null,
+      major: (formData as any).major || null,
+      selected_clubs: (formData as any).selectedClubs || null,
+      graduation_month: (formData as any).graduationMonth || null,
+      graduation_year: (formData as any).graduationYear || null,
+      interested_in_officer: (formData as any).interestedInOfficer || false,
+      affiliation: (formData as any).affiliation || null,
+      job_title: (formData as any).jobTitle || null,
+      notes: (formData as any).notes || null,
+      submitted_at: new Date().toISOString(),
+      status: 'active' as const
+    };
 
-**User Type:** ${formData.userType === 'ud-grad-student' ? 'UD Grad Student' : 'Industry/Academic Friend'}
-**Email:** ${formData.email}
-**Submitted:** ${new Date().toISOString()}
+    // Insert into Supabase
+    const { data, error } = await supabase
+      .from('form_submissions')
+      .insert([submissionData])
+      .select()
+      .single();
 
-${formData.userType === 'ud-grad-student' ? `
-### Student Information
-- **Major:** ${(formData as any).major}
-- **Graduation:** ${(formData as any).graduationMonth} ${(formData as any).graduationYear}
-- **Selected Clubs:** ${(formData as any).selectedClubs?.join(', ') || 'None'}
-` : `
-### Industry/Academic Information
-- **Affiliation:** ${(formData as any).affiliation}
-- **Job Title:** ${(formData as any).jobTitle}
-- **Selected Clubs:** ${(formData as any).selectedClubs?.join(', ') || 'None'}
-- **Notes:** ${(formData as any).notes || 'None'}
-`}
-
-## Raw Data
-\`\`\`json
-${JSON.stringify(formData, null, 2)}
-\`\`\`
-
----
-*This issue will be automatically processed by GitHub Actions to update the submissions.json file.*
-    `;
-
-    // Create GitHub issue (always succeeds, no race conditions)
-    const githubResponse = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPO_OWNER}/${process.env.GITHUB_REPO_NAME}/issues`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: issueTitle,
-        body: issueBody,
-        labels: ['form-submission', 'pending-processing', formData.userType === 'ud-grad-student' ? 'student' : 'industry']
-      })
-    });
-
-    if (!githubResponse.ok) {
-      const error = await githubResponse.text();
-      console.error('GitHub API error:', error);
-      throw new Error('Failed to create GitHub issue');
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error('Failed to save form submission');
     }
 
-    const issue = await githubResponse.json();
-    console.log('Created GitHub issue:', issue.html_url);
+    console.log('Form submission saved to Supabase:', data.id);
 
     return NextResponse.json({ 
       success: true, 
       message: 'Thank you for your interest! We\'ll be in touch soon.',
-      issueUrl: issue.html_url
+      submissionId: data.id
     });
 
   } catch (error) {

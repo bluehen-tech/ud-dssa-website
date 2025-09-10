@@ -1,13 +1,9 @@
 {
-  "version": 2,
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs",
   "outputDirectory": ".next",
+  "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_SANITY_PROJECT_ID": "ewh6rtd1",
-    "NEXT_PUBLIC_SANITY_DATASET": "production",
-    "NEXT_PUBLIC_SANITY_API_VERSION": "2025-03-14"
+    "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next_public_supabase_anon_key"
   }
-} 
+}
