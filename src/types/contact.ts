@@ -1,11 +1,11 @@
 export interface BaseContactForm {
   email: string;
+  fullName: string;
   userType: 'ud-grad-student' | 'industry-academic-friend';
 }
 
 export interface UDGradStudentForm extends BaseContactForm {
   userType: 'ud-grad-student';
-  fullName: string;
   major: string;
   selectedClubs: string[];
   graduationMonth: string;

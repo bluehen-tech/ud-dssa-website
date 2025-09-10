@@ -20,9 +20,6 @@ export default function Header() {
               <Link href="/" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
                 Home
               </Link>
-              <Link href="/about" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
-                About/Contact
-              </Link>
             </nav>
           </div>
           <div className="-mr-2 flex items-center md:hidden">
@@ -51,9 +48,6 @@ export default function Header() {
           <div className="pt-2 pb-3 space-y-1">
             <Link href="/" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary">
               Home
-            </Link>
-            <Link href="/about" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary">
-              About/Contact
             </Link>
           </div>
         </div>
