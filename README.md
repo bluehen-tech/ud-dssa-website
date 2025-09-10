@@ -16,10 +16,8 @@ ud-dssa-website/
 │   └── images/           # Image assets
 ├── src/                  # Source code
 │   ├── app/              # Next.js App Router
-│   │   ├── about/        # About page
-│   │   ├── contact/      # Contact page
 │   │   ├── api/          # API routes
-│   │   │   ├── submit-form/    # Form submission endpoint
+│   │   │   ├── submit-form/    # Form submission endpoint (Supabase)
 │   │   │   ├── unsubscribe/    # Unsubscribe endpoint
 │   │   │   └── email-list/     # Email list retrieval
 │   │   ├── globals.css   # Global styles
@@ -32,14 +30,14 @@ ud-dssa-website/
 │   │   ├── ContactForm.tsx    # Main contact form
 │   │   └── UnsubscribeForm.tsx # Unsubscribe form
 │   ├── data/             # Content data (easy to edit!)
-│   │   ├── team.ts       # Team member information
-│   │   ├── events.ts     # Event listings
-│   │   ├── services.ts   # Service offerings
 │   │   ├── clubs.ts      # Data science clubs
-│   │   ├── submissions.json # Form submissions (auto-generated)
-│   │   └── index.ts      # Data exports
+│   │   └── submissions.json # Legacy form submissions (reference only)
+│   ├── lib/              # Utility libraries
+│   │   └── supabase.ts   # Supabase client configuration
 │   └── types/            # TypeScript type definitions
 │       └── contact.ts    # Contact form types
+├── scripts/              # Utility scripts
+│   └── migrate-to-supabase.js # Data migration script
 ├── .next/                # Next.js build output
 ├── node_modules/         # Dependencies
 ├── package.json          # Project configuration
@@ -48,7 +46,6 @@ ud-dssa-website/
 ├── postcss.config.js     # PostCSS configuration
 ├── tailwind.config.js    # Tailwind CSS configuration
 ├── tsconfig.json         # TypeScript configuration
-├── vercel.json           # Vercel deployment configuration
 └── .env.local            # Environment variables (not in git)
 ```
 
@@ -57,8 +54,8 @@ ud-dssa-website/
 - **Framework**: Next.js with TypeScript
 - **Styling**: Tailwind CSS
 - **Content Management**: Static TypeScript files (student-friendly!)
-- **Email List Management**: GitHub-integrated JSON system
-- **Form Handling**: Built-in Next.js API routes
+- **Database**: Supabase (PostgreSQL)
+- **Form Handling**: Built-in Next.js API routes with Supabase integration
 - **Deployment**: Vercel
 
 ## Getting Started
@@ -79,46 +76,37 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Content Management
 
-This project uses a **student-friendly approach** to content management. All content is stored in simple TypeScript files that are easy to edit:
-
-### Adding Team Members
-Edit `src/data/team.ts` to add or update team member information.
-
-### Managing Events
-Edit `src/data/events.ts` to add upcoming events or archive past ones.
-
-### Updating Services
-Edit `src/data/services.ts` to modify service offerings and pricing.
+This project uses a **student-friendly approach** to content management. Content is stored in simple TypeScript files that are easy to edit:
 
 ### Managing Data Science Clubs
-Edit `src/data/clubs.ts` to add or update available clubs for student selection.
+Edit `src/data/clubs.ts` to add or update available clubs for student selection in the contact form.
 
 ### Benefits of This Approach
 - ✅ **No CMS learning curve** - Just edit TypeScript files
 - ✅ **Version controlled** - All changes tracked in Git
-- ✅ **No external dependencies** - No need for external CMS or API keys
 - ✅ **Student-friendly** - Easy for new contributors to understand
-- ✅ **Fast development** - No need to set up external services
+- ✅ **Fast development** - Minimal setup required
 
-## Email List Management
+## Form Submission Management
 
-The website includes a **self-maintaining email list system** that's perfect for student organizations:
+The website uses **Supabase** for reliable form submission storage and management:
 
 ### How It Works
-- **Form submissions** automatically update `src/data/submissions.json`
+- **Form submissions** are stored in Supabase PostgreSQL database
+- **Real-time data** - no waiting for GitHub Actions or file updates
 - **Unsubscribe functionality** built-in with dedicated form
 - **Email list API** provides clean data for email campaigns
-- **Private repository** ensures only authorized students can access the data
+- **Secure access** through Supabase dashboard
 
-### For Students with Repository Access
-- View all form submissions in `src/data/submissions.json`
-- See unsubscribe status for each email address
-- Full audit trail in Git history
+### For Students with Supabase Access
+- View all form submissions in the Supabase dashboard
+- See submission status and user types
+- Full audit trail with timestamps
 - No manual data entry required
 
 ### API Endpoints
 - `GET /api/email-list` - Retrieve active email list (excludes unsubscribed)
-- `POST /api/submit-form` - Handle contact form submissions
+- `POST /api/submit-form` - Handle contact form submissions (saves to Supabase)
 - `POST /api/unsubscribe` - Handle unsubscribe requests
 
 ### Contact Form Features
@@ -135,12 +123,14 @@ To deploy this project to Vercel:
 1. Create a Vercel account at [vercel.com](https://vercel.com)
 2. Install the Vercel CLI: `npm install -g vercel`
 3. Run `vercel login` and follow the prompts
-4. From the project root, run `vercel` to deploy
-5. **Important**: Make sure your repository is set to private for data security
-6. Deploy! No environment variables needed for this simplified setup.
+4. **Set up Supabase environment variables** in Vercel dashboard:
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+5. From the project root, run `vercel` to deploy
+6. **Important**: Make sure your repository is set to private for data security
 
 ### Post-Deployment
-- Test the contact form to ensure submissions are working
+- Test the contact form to ensure submissions are working with Supabase
 - Verify the email list API endpoint is accessible
 - Set up the unsubscribe page at `/unsubscribe` (optional)
 
@@ -156,7 +146,7 @@ To deploy this project to Vercel:
 - **No complex setup required** - just clone and run `npm install`
 - **Content editing** - modify files in `src/data/` directory
 - **Form testing** - use the contact form on the home page
-- **Email list access** - view submissions in `src/data/submissions.json`
+- **Submission access** - view submissions in Supabase dashboard
 
 ## Contact
 
