@@ -28,33 +28,35 @@ export default function Home() {
     }, 100);
   };
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Subtle background animation */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-3/4 right-1/4 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
-        <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{animationDelay: '4s'}}></div>
-      </div>
-      
-      <div className="max-w-4xl w-full space-y-8 relative z-10">
-        {/* Hero Section */}
+    <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">      
+      <div className="max-w-4xl w-full space-y-6 relative z-10">
+        {/* Hero Section - Zaxxon Style */}
         <div className={`text-center transition-all duration-1000 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
-          <h1 className={`text-4xl font-bold text-blue-primary sm:text-5xl md:text-6xl transition-all duration-1200 delay-200 ${
+          {/* Zaxxon-Style Bracket Container */}
+          <div className={`relative inline-block transition-all duration-1200 delay-200 ${
             isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
           }`}>
+            {/* Content Container - Clean White Background */}
+            <div className="relative bg-white p-6 rounded-lg border-2 border-blue-200">
+              <div className="relative z-10">
+                <h1 className="text-4xl font-bold text-blue-primary sm:text-5xl md:text-6xl mb-4">
             UD Data Science Student Association
           </h1>
-          <p className={`mt-3 text-xl text-gray-600 transition-all duration-1000 delay-400 ${
-            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            Building the graduate student data science ecosystem at UD
-          </p>
+                
+                <p className="text-xl text-gray-700 font-medium">
+                  Graduate student–led association building collaborative tools<br></br>and opportunities within UD’s data science ecosystem
+                </p>
+              </div>
+            </div>
+
+
+          </div>
         </div>
 
         {/* Mission Section */}
-        <div className={`bg-gray-50 p-6 rounded-lg transition-all duration-1000 delay-700 ${
+        <div className={`bg-gray-50 p-5 rounded-lg transition-all duration-1000 delay-700 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
           <h2 className="text-3xl font-bold text-blue-primary mb-4">Our Mission</h2>
@@ -64,25 +66,28 @@ export default function Home() {
         </div>
 
         {/* Features Section */}
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-1000 delay-900 ${
+        <div className={`transition-all duration-1000 delay-900 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
+          <h2 className="text-3xl font-bold text-blue-primary mb-4 text-center">What We Build</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
             <h3 className="text-xl font-semibold text-blue-primary mb-2">Member Portfolio Platform</h3>
             <p className="text-gray-600">Showcase your own projects and achievements while gaining hands-on experience with modern web and data science tools.</p>
           </div>
           <div className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <h3 className="text-xl font-semibold text-blue-primary mb-2">Interdisciplinary Event Marketing</h3>
+            <h3 className="text-xl font-semibold text-blue-primary mb-2">Email Marketing for Interdisciplinary Events</h3>
             <p className="text-gray-600">Discover workshops, hackathons, and networking opportunities across all of UD and inclusive of all data science clubs.</p>
           </div>
           <div className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
             <h3 className="text-xl font-semibold text-blue-primary mb-2">Experiential Learning</h3>
             <p className="text-gray-600">Gain hands-on experience through industry partnerships and internal infrastructure projects including our new website, member portfolio platform, and email marketing infrastructure.</p>
           </div>
+          </div>
         </div>
 
         {/* Call to Action */}
-        <div className={`text-center mb-8 transition-all duration-1000 delay-1100 ${
+        <div className={`text-center mb-6 transition-all duration-1000 delay-1100 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
@@ -104,7 +109,7 @@ export default function Home() {
         <div id="contact-form" className={`transition-all duration-1000 delay-1300 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
-          <ContactForm />
+        <ContactForm />
         </div>
       </div>
     </div>

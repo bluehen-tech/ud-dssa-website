@@ -6,6 +6,19 @@ import { useState } from 'react';
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const scrollToForm = () => {
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      const formElement = document.getElementById('contact-form');
+      if (formElement) {
+        formElement.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 100);
+  };
+
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,6 +34,14 @@ export default function Header() {
                 Home
               </Link>
             </nav>
+          </div>
+          <div className="hidden md:flex md:items-center">
+            <button
+              onClick={scrollToForm}
+              className="px-3 py-1.5 bg-blue-primary text-white text-sm font-medium rounded-full hover:bg-blue-800 transition-colors duration-200"
+            >
+              Get Connected
+            </button>
           </div>
           <div className="-mr-2 flex items-center md:hidden">
             <button
@@ -49,6 +70,15 @@ export default function Header() {
             <Link href="/" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary">
               Home
             </Link>
+            <button
+              onClick={() => {
+                scrollToForm();
+                setIsMenuOpen(false);
+              }}
+              className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white bg-blue-primary hover:bg-blue-800 transition-colors duration-200"
+            >
+              Get Connected
+            </button>
           </div>
         </div>
       )}

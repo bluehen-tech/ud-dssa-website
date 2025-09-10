@@ -98,7 +98,7 @@ export default function ContactForm() {
           selectedClubs: ['1'] // Auto-select UDSSA on reset
         });
         setSubmitResult(null);
-      }, 10000); // Show confirmation for 10 seconds
+      }, 15000); // Show confirmation for 15 seconds
     } catch (error) {
       setSubmitResult({
         success: false,
@@ -160,7 +160,7 @@ export default function ContactForm() {
   return (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-blue-primary mb-6 text-center">
-        Get In Touch
+        Get Connected
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -401,7 +401,7 @@ export default function ContactForm() {
                 Submitting...
               </span>
             ) : (
-              'Join the Community 🚀'
+              '🌱 Join the Community 🌱'
             )}
           </button>
         </div>
