@@ -1,8 +1,5 @@
-'use client';
-
-import Link from 'next/link';
-import ContactForm from '@/components/ContactForm';
 import { useState, useEffect } from 'react';
+import ContactForm from '@/components/ContactForm';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
