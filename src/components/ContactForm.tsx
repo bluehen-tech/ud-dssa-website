@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ContactFormData, UDGradStudentForm, IndustryAcademicForm } from '@/types/contact';
+import { ContactFormData, UDGradStudentForm, IndustryAcademicForm, UndergraduateStudentForm, OtherUniversityStudentForm } from '@/types/contact';
 import { dataScienceClubs } from '@/data/clubs';
 
 export default function ContactForm() {
@@ -32,8 +32,8 @@ export default function ContactForm() {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (formData.userType === 'ud-grad-student') {
-      const studentData = formData as Partial<UDGradStudentForm>;
+    if (formData.userType === 'ud-grad-student' || formData.userType === 'undergraduate-student' || formData.userType === 'other-university-student') {
+      const studentData = formData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>;
       
       if (!studentData.major) {
         newErrors.major = 'Major is required';
@@ -43,6 +43,14 @@ export default function ContactForm() {
       }
       if (!studentData.graduationYear) {
         newErrors.graduationYear = 'Graduation year is required';
+      }
+      
+      // Additional validation for other university students
+      if (formData.userType === 'other-university-student') {
+        const otherUniData = formData as Partial<OtherUniversityStudentForm>;
+        if (!otherUniData.affiliation) {
+          newErrors.affiliation = 'University affiliation is required';
+        }
       }
     } else if (formData.userType === 'industry-academic-friend') {
       const industryData = formData as Partial<IndustryAcademicForm>;
@@ -87,7 +95,7 @@ export default function ContactForm() {
       
       setSubmitResult({
         success: true,
-        message: `Welcome to the UDSSA community, ${formData.fullName}! We've sent a confirmation to ${formData.email}.`
+        message: `Welcome to the UDSSA community, ${formData.fullName}! Your ${formData.email} has been registered to our mailing list and we look forward to interacting with you in the future.`
       });
       
       // Reset form after a delay
@@ -118,11 +126,11 @@ export default function ContactForm() {
         [field]: value
       };
       
-      // Auto-select UDSSA when user type changes to ud-grad-student
-      if (field === 'userType' && value === 'ud-grad-student') {
-        const currentClubs = (newData as Partial<UDGradStudentForm>).selectedClubs || [];
+      // Auto-select UDSSA when user type changes to any student type
+      if (field === 'userType' && (value === 'ud-grad-student' || value === 'undergraduate-student' || value === 'other-university-student')) {
+        const currentClubs = (newData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>).selectedClubs || [];
         if (!currentClubs.includes('1')) {
-          (newData as Partial<UDGradStudentForm>).selectedClubs = [...currentClubs, '1'];
+          (newData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>).selectedClubs = [...currentClubs, '1'];
         }
       }
       
@@ -139,12 +147,12 @@ export default function ContactForm() {
   };
 
   const handleClubToggle = (clubId: string) => {
-    if (formData.userType !== 'ud-grad-student') return;
+    if (formData.userType !== 'ud-grad-student' && formData.userType !== 'undergraduate-student' && formData.userType !== 'other-university-student') return;
     
     // Prevent unchecking UDSSA (id: '1') since they're already part of it
     if (clubId === '1') return;
     
-    const currentClubs = ((formData as UDGradStudentForm).selectedClubs || []);
+    const currentClubs = ((formData as UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm).selectedClubs || []);
     const newClubs = currentClubs.includes(clubId)
       ? currentClubs.filter(id => id !== clubId)
       : [...currentClubs, clubId];
@@ -182,6 +190,28 @@ export default function ContactForm() {
                 className="mr-3"
               />
               <span className="text-gray-700">UD Grad Student</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="userType"
+                value="undergraduate-student"
+                checked={formData.userType === 'undergraduate-student'}
+                onChange={(e) => handleInputChange('userType', e.target.value)}
+                className="mr-3"
+              />
+              <span className="text-gray-700">UD Undergraduate Student</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="userType"
+                value="other-university-student"
+                checked={formData.userType === 'other-university-student'}
+                onChange={(e) => handleInputChange('userType', e.target.value)}
+                className="mr-3"
+              />
+              <span className="text-gray-700">Student from Other University</span>
             </label>
             <label className="flex items-center">
               <input
@@ -234,8 +264,28 @@ export default function ContactForm() {
         </div>
 
         {/* Conditional Fields */}
-        {formData.userType === 'ud-grad-student' && (
+        {(formData.userType === 'ud-grad-student' || formData.userType === 'undergraduate-student' || formData.userType === 'other-university-student') && (
           <>
+            {/* Affiliation - Only for Other University Students */}
+            {formData.userType === 'other-university-student' && (
+              <div>
+                <label htmlFor="affiliation" className="block text-sm font-medium text-gray-700 mb-1">
+                  University Affiliation *
+                </label>
+                <input
+                  type="text"
+                  id="affiliation"
+                  value={(formData as Partial<OtherUniversityStudentForm>).affiliation || ''}
+                  onChange={(e) => handleInputChange('affiliation', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-primary ${
+                    errors.affiliation ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="e.g., University of Pennsylvania, MIT, Stanford University"
+                />
+                {errors.affiliation && <p className="mt-1 text-sm text-red-600">{errors.affiliation}</p>}
+              </div>
+            )}
+
             {/* Major */}
             <div>
               <label htmlFor="major" className="block text-sm font-medium text-gray-700 mb-1">
@@ -244,7 +294,7 @@ export default function ContactForm() {
               <input
                 type="text"
                 id="major"
-                value={(formData as Partial<UDGradStudentForm>).major || ''}
+                value={(formData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>).major || ''}
                 onChange={(e) => handleInputChange('major', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-primary ${
                   errors.major ? 'border-red-500' : 'border-gray-300'
@@ -283,25 +333,27 @@ export default function ContactForm() {
               </div>
             </div>
 
-            {/* Leadership Interest */}
-            <div>
-              <label className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={(formData as Partial<UDGradStudentForm>).interestedInOfficer || false}
-                  onChange={(e) => handleInputChange('interestedInOfficer', e.target.checked)}
-                  className="mt-1"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">
-                    Interested in UDSSA Leadership Position
+            {/* Leadership Interest - Only for UD Grad Students */}
+            {formData.userType === 'ud-grad-student' && (
+              <div>
+                <label className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={(formData as Partial<UDGradStudentForm>).interestedInOfficer || false}
+                    onChange={(e) => handleInputChange('interestedInOfficer', e.target.checked)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      Interested in UDSSA Leadership Position
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Help lead the organization and shape the future of UD's data science community
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    Help lead the organization and shape the future of UD's data science community
-                  </div>
-                </div>
-              </label>
-            </div>
+                </label>
+              </div>
+            )}
 
             {/* Graduation Date */}
             <div className="grid grid-cols-2 gap-4">
@@ -311,7 +363,7 @@ export default function ContactForm() {
                 </label>
                 <select
                   id="graduationMonth"
-                  value={(formData as Partial<UDGradStudentForm>).graduationMonth || ''}
+                  value={(formData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>).graduationMonth || ''}
                   onChange={(e) => handleInputChange('graduationMonth', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-primary ${
                     errors.graduationMonth ? 'border-red-500' : 'border-gray-300'
@@ -331,7 +383,7 @@ export default function ContactForm() {
                 </label>
                 <select
                   id="graduationYear"
-                  value={(formData as Partial<UDGradStudentForm>).graduationYear || ''}
+                  value={(formData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>).graduationYear || ''}
                   onChange={(e) => handleInputChange('graduationYear', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-primary ${
                     errors.graduationYear ? 'border-red-500' : 'border-gray-300'

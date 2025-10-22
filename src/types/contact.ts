@@ -1,7 +1,7 @@
 export interface BaseContactForm {
   email: string;
   fullName: string;
-  userType: 'ud-grad-student' | 'industry-academic-friend';
+  userType: 'ud-grad-student' | 'industry-academic-friend' | 'undergraduate-student' | 'other-university-student';
 }
 
 export interface UDGradStudentForm extends BaseContactForm {
@@ -20,7 +20,24 @@ export interface IndustryAcademicForm extends BaseContactForm {
   notes?: string;
 }
 
-export type ContactFormData = UDGradStudentForm | IndustryAcademicForm;
+export interface UndergraduateStudentForm extends BaseContactForm {
+  userType: 'undergraduate-student';
+  major: string;
+  selectedClubs: string[];
+  graduationMonth: string;
+  graduationYear: string;
+}
+
+export interface OtherUniversityStudentForm extends BaseContactForm {
+  userType: 'other-university-student';
+  affiliation: string;
+  major: string;
+  selectedClubs: string[];
+  graduationMonth: string;
+  graduationYear: string;
+}
+
+export type ContactFormData = UDGradStudentForm | IndustryAcademicForm | UndergraduateStudentForm | OtherUniversityStudentForm;
 
 export interface FormSubmissionResult {
   success: boolean;

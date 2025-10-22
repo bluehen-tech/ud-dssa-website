@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import ContactForm from '@/components/ContactForm';
 
@@ -27,6 +29,22 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">      
       <div className="max-w-4xl w-full space-y-6 relative z-10">
+        {/* Mobile-First Call to Action - Prominent for QR code users */}
+        <div className={`block sm:hidden transition-all duration-1000 ${
+          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
+          <div className="bg-blue-primary text-white p-4 rounded-lg shadow-lg text-center mb-4">
+            <h2 className="text-xl font-bold mb-2">Join UD's Student-Led Data Science Community!</h2>
+            <p className="text-sm mb-3">Students, faculty, and industry partners are encouraged to get connected! Click the button below to get started.</p>
+            <button
+              onClick={scrollToForm}
+              className="px-6 py-3 bg-white text-blue-primary font-bold rounded-md hover:bg-gray-100 hover:scale-105 transition-all duration-200 shadow-md"
+            >
+              Get Connected Now
+            </button>
+          </div>
+        </div>
+
         {/* Hero Section - Zaxxon Style */}
         <div className={`text-center transition-all duration-1000 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
