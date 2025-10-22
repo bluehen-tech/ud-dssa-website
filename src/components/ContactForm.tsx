@@ -95,7 +95,7 @@ export default function ContactForm() {
       
       setSubmitResult({
         success: true,
-        message: `Welcome to the UDSSA community, ${formData.fullName}! Your ${formData.email} has been registered to our mailing list and we look forward to interacting with you in the future.`
+        message: `Welcome to the UDSSA community, ${formData.fullName}! Your email, ${formData.email}, has been registered to our mailing list and we look forward to interacting with you in the future.`
       });
       
       // Reset form after a delay
