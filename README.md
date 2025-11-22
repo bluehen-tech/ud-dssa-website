@@ -17,33 +17,49 @@ ud-dssa-website/
 ├── src/                  # Source code
 │   ├── app/              # Next.js App Router
 │   │   ├── api/          # API routes
-│   │   │   ├── submit-form/    # Form submission endpoint (Supabase)
+│   │   │   ├── submit-form/    # Form submission endpoint
 │   │   │   ├── unsubscribe/    # Unsubscribe endpoint
 │   │   │   └── email-list/     # Email list retrieval
+│   │   ├── auth/         # Authentication routes
+│   │   │   └── callback/ # Auth callback route (server-side)
+│   │   ├── login/        # Login page
+│   │   ├── opportunities/ # Opportunities page (public with prompt)
+│   │   ├── officers/     # Officers page (protected)
 │   │   ├── globals.css   # Global styles
-│   │   ├── layout.tsx    # Root layout
+│   │   ├── layout.tsx    # Root layout with AuthProvider
 │   │   └── page.tsx      # Home page with contact form
 │   ├── components/       # React components
 │   │   ├── layout/       # Layout components
-│   │   │   ├── Header.tsx
+│   │   │   ├── Header.tsx    # Header with auth state
 │   │   │   └── Footer.tsx
 │   │   ├── ContactForm.tsx    # Main contact form
-│   │   └── UnsubscribeForm.tsx # Unsubscribe form
+│   │   └── UnsubscribeForm.tsx
+│   ├── contexts/         # React contexts
+│   │   └── AuthContext.tsx    # Centralized auth state
 │   ├── data/             # Content data (easy to edit!)
 │   │   ├── clubs.ts      # Data science clubs
-│   │   └── submissions.json # Legacy form submissions (reference only)
+│   │   ├── opportunities.ts   # Opportunities listings
+│   │   └── submissions.json   # Legacy form submissions
 │   ├── lib/              # Utility libraries
-│   │   └── supabase.ts   # Supabase client configuration
+│   │   ├── supabase-browser.ts  # Browser Supabase client
+│   │   └── session-utils.ts     # Session validation
 │   └── types/            # TypeScript type definitions
-│       └── contact.ts    # Contact form types
+│       ├── contact.ts    # Contact form types
+│       └── opportunity.ts # Opportunity types
+├── docs/                 # Documentation
+│   ├── AUTH_IMPLEMENTATION_SUMMARY.md
+│   ├── TROUBLESHOOTING_AUTH.md
+│   └── SUPABASE_SETUP.md
+├── supabase/             # Supabase SQL scripts
+│   ├── MUST_RUN_THIS.sql
+│   └── fix_profiles_rls.sql
 ├── scripts/              # Utility scripts
-│   └── migrate-to-supabase.js # Data migration script
+│   └── migrate-to-supabase.js
+├── middleware.ts         # Next.js middleware for route protection
 ├── .next/                # Next.js build output
 ├── node_modules/         # Dependencies
 ├── package.json          # Project configuration
-├── package-lock.json     # Dependency lock file
 ├── next.config.js        # Next.js configuration
-├── postcss.config.js     # PostCSS configuration
 ├── tailwind.config.js    # Tailwind CSS configuration
 ├── tsconfig.json         # TypeScript configuration
 └── .env.local            # Environment variables (not in git)
@@ -51,14 +67,22 @@ ud-dssa-website/
 
 ## Tech Stack
 
-- **Framework**: Next.js with TypeScript
+- **Framework**: Next.js 14 with TypeScript and App Router
 - **Styling**: Tailwind CSS
 - **Content Management**: Static TypeScript files (student-friendly!)
 - **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth with Magic Links
 - **Form Handling**: Built-in Next.js API routes with Supabase integration
 - **Deployment**: Vercel
 
 ## Getting Started
+
+### Prerequisites
+- Node.js 18+ installed
+- Supabase account (free tier works)
+- Environment variables configured (see below)
+
+### Setup
 
 ```bash
 # Clone this repository
@@ -68,11 +92,30 @@ git clone https://github.com/your-org/ud-dssa-website.git
 cd ud-dssa-website
 npm install
 
+# Create environment variables file
+cp .env.example .env.local
+
+# Edit .env.local with your Supabase credentials
+# Get these from: Supabase Dashboard → Settings → API
+
 # Run the development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Supabase Setup
+
+Before using authentication features, you need to configure Supabase:
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL scripts in `supabase/MUST_RUN_THIS.sql` to set up the profiles table and RLS policies
+3. Configure redirect URLs in Supabase Dashboard → Authentication → URL Configuration:
+   - Add `http://localhost:3000/login` for development
+   - Add your production URLs when deploying
+4. Update `.env.local` with your Supabase URL and anon key
+
+See `docs/SUPABASE_SETUP.md` for detailed instructions.
 
 ## Content Management
 
@@ -116,23 +159,40 @@ The website uses **Supabase** for reliable form submission storage and managemen
 - **Real-time validation**: Immediate feedback on form errors
 - **Success messaging**: Clear confirmation after submission
 
-## Vercel Deployment
+## Deployment
 
-To deploy this project to Vercel:
+### Vercel Deployment
 
 1. Create a Vercel account at [vercel.com](https://vercel.com)
-2. Install the Vercel CLI: `npm install -g vercel`
-3. Run `vercel login` and follow the prompts
-4. **Set up Supabase environment variables** in Vercel dashboard:
+2. Connect your GitHub repository
+3. **Configure environment variables** in Vercel dashboard:
    - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
-5. From the project root, run `vercel` to deploy
-6. **Important**: Make sure your repository is set to private for data security
+4. Deploy the project
+5. **Update Supabase redirect URLs**:
+   - Go to Supabase Dashboard → Authentication → URL Configuration
+   - Add your production URLs:
+     - `https://your-app.vercel.app/login`
+     - `https://bluehen-dssa.org/login` (if using custom domain)
 
-### Post-Deployment
-- Test the contact form to ensure submissions are working with Supabase
-- Verify the email list API endpoint is accessible
-- Set up the unsubscribe page at `/unsubscribe` (optional)
+### Post-Deployment Checklist
+- ✅ Test authentication with @udel.edu email
+- ✅ Verify magic link email delivery
+- ✅ Test sign out functionality
+- ✅ Verify protected routes redirect to login
+- ✅ Test contact form submissions
+- ✅ Check that admin status displays correctly
+
+### Environment Variables
+
+Required in `.env.local` (development) and Vercel (production):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+Get these from: Supabase Dashboard → Settings → API
 
 ## Contributing
 
@@ -143,10 +203,21 @@ To deploy this project to Vercel:
 5. Request review from at least one team member
 
 ### For New Student Contributors
-- **No complex setup required** - just clone and run `npm install`
+- **No complex setup required** - just clone, run `npm install`, and configure `.env.local`
 - **Content editing** - modify files in `src/data/` directory
 - **Form testing** - use the contact form on the home page
 - **Submission access** - view submissions in Supabase dashboard
+- **Authentication testing** - use @udel.edu email for sign-in testing
+- **Documentation** - comprehensive guides in `/docs` folder
+
+### Authentication Features
+- **Magic Link Sign-In**: Users sign in with their @udel.edu email
+- **Admin Roles**: Designated users have admin privileges
+- **Protected Routes**: `/officers` requires authentication
+- **Session Management**: 4-hour session duration with auto-refresh
+- **Domain Validation**: Only @udel.edu emails are allowed
+
+See `docs/AUTH_IMPLEMENTATION_SUMMARY.md` for technical details.
 
 ## Contact
 
