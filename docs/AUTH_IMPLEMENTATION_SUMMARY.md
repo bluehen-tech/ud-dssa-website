@@ -85,19 +85,30 @@ ON profiles FOR SELECT
 TO authenticated
 USING (auth.uid() = id);
 
--- Users can insert their own profile
+-- Users can insert their own profile (NEW USER SIGNUP)
+-- SECURITY: Prevents privilege escalation by forcing admin_flag = false
 CREATE POLICY "Users can insert own profile"
 ON profiles FOR INSERT
 TO authenticated
-WITH CHECK (auth.uid() = id);
+WITH CHECK (
+  auth.uid() = id
+  AND admin_flag = false  -- ✅ Cannot set admin_flag to true
+);
 
 -- Users can update their own profile
+-- SECURITY: Prevents changing admin_flag or email
 CREATE POLICY "Users can update own profile"
 ON profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+WITH CHECK (
+  auth.uid() = id
+  AND admin_flag = (SELECT admin_flag FROM profiles WHERE id = auth.uid())  -- ✅ Must keep existing admin_flag
+  AND email = (SELECT email FROM profiles WHERE id = auth.uid())            -- ✅ Must keep existing email
+);
 ```
+
+**🔒 Security Note:** These policies prevent users from promoting themselves to admin. Only database administrators (via Supabase dashboard or service role) can modify `admin_flag`.
 
 ### Making a User Admin:
 ```sql

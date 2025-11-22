@@ -104,13 +104,33 @@ alter table profiles enable row level security;
 -- Allow authenticated users to read their own profile
 create policy "Users can read own profile"
   on profiles for select
+  to authenticated
   using (auth.uid() = id);
 
--- Allow service role to manage all profiles
-create policy "Service role can manage profiles"
-  on profiles for all
-  using (auth.jwt()->>'role' = 'service_role');
+-- Allow users to insert their own profile
+-- SECURITY: Prevents privilege escalation
+create policy "Users can insert own profile"
+  on profiles for insert
+  to authenticated
+  with check (
+    auth.uid() = id
+    and admin_flag = false  -- Cannot self-promote to admin
+  );
+
+-- Allow users to update their own profile
+-- SECURITY: Cannot change admin_flag or email
+create policy "Users can update own profile"
+  on profiles for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (
+    auth.uid() = id
+    and admin_flag = (select admin_flag from profiles where id = auth.uid())
+    and email = (select email from profiles where id = auth.uid())
+  );
 ```
+
+**🔒 Security Note:** These RLS policies prevent users from promoting themselves to admin or changing their email. Only database administrators (via Supabase dashboard or service role) can modify `admin_flag` and `email` fields.
 
 ### Adding Admin Users
 
