@@ -36,8 +36,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-  // If session exists, validate it
-  if (isProtectedPath && session) {
+    // If session exists, validate it
     // Check if Supabase JWT has expired
     const now = Math.floor(Date.now() / 1000);
     if (session.expires_at && session.expires_at <= now) {

@@ -3,16 +3,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { session } = useAuth();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const processingAuthRef = useRef(false);
+
+  // Auto-redirect if user is logged in
+  useEffect(() => {
+    if (session) {
+      const redirect = searchParams.get('redirect');
+      const nextUrl = redirect || '/opportunities';
+      
+      const timer = setTimeout(() => {
+        window.location.href = nextUrl;
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [session, searchParams]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -59,10 +75,11 @@ export default function LoginPage() {
           console.log('🔄 Redirecting to:', nextUrl);
 
           // Redirect after a brief moment to ensure session is fully set
+          // The AuthContext will update the session state, which will trigger the UI to show logged-in message
           setTimeout(() => {
             subscription.unsubscribe();
             window.location.href = nextUrl;
-          }, 500);
+          }, 2000); // Increased delay to show logged-in message briefly
         }
 
         if (event === 'SIGNED_OUT') {
@@ -136,6 +153,45 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // If user is already logged in, show logged-in message
+  if (session) {
+    const redirect = searchParams.get('redirect');
+    const nextUrl = redirect || '/opportunities';
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] py-8 px-4">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
+          <h1 className="text-3xl font-bold text-blue-primary mb-2 text-center">
+            Successfully Signed In
+          </h1>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-800 text-sm text-center">
+                <strong>✅ You are now logged in!</strong>
+              </p>
+              <p className="text-green-700 text-sm text-center mt-2">
+                Signed in as: <strong>{session.user.email}</strong>
+              </p>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-blue-800 text-xs text-center">
+                Redirecting you to your destination...
+              </p>
+            </div>
+            <div className="text-center">
+              <Link
+                href={nextUrl}
+                className="text-sm text-blue-primary hover:text-blue-800 hover:underline"
+              >
+                Continue to {redirect ? 'your destination' : 'Opportunities'} →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] py-8 px-4">

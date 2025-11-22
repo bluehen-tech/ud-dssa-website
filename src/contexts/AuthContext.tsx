@@ -24,9 +24,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMountedRef = useRef(true);
   const initializingRef = useRef(false);
 
-  // Fetch admin status
-  const fetchAdminStatus = async (userId: string) => {
+  // Cache key for admin status
+  const getAdminCacheKey = (userId: string) => `admin_status_${userId}`;
+
+  // Get cached admin status
+  const getCachedAdminStatus = (userId: string): boolean | null => {
+    if (typeof window === 'undefined') return null;
     try {
+      const cached = sessionStorage.getItem(getAdminCacheKey(userId));
+      return cached === 'true' ? true : cached === 'false' ? false : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Set cached admin status
+  const setCachedAdminStatus = (userId: string, isAdmin: boolean) => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem(getAdminCacheKey(userId), String(isAdmin));
+    } catch (error) {
+      console.error('Error caching admin status:', error);
+    }
+  };
+
+  // Clear cached admin status
+  const clearCachedAdminStatus = (userId?: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (userId) {
+        sessionStorage.removeItem(getAdminCacheKey(userId));
+      } else {
+        // Clear all admin status caches
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('admin_status_')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error clearing cached admin status:', error);
+    }
+  };
+
+  // Fetch admin status with caching
+  const fetchAdminStatus = async (userId: string, useCache = true) => {
+    try {
+      // Check cache first
+      if (useCache) {
+        const cached = getCachedAdminStatus(userId);
+        if (cached !== null) {
+          console.log('✅ Using cached admin status:', cached ? 'Admin' : 'Member');
+          return cached;
+        }
+      }
+
       const supabase = createClient();
       
       // Add timeout to prevent infinite hanging
@@ -47,15 +99,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('Error fetching profile:', error);
-        return false;
+        // Return cached value if available, otherwise false
+        const cached = getCachedAdminStatus(userId);
+        return cached !== null ? cached : false;
       }
       
       const isAdmin = profile?.admin_flag === true;
       console.log('✅ User role:', isAdmin ? 'Admin' : 'Member');
+      
+      // Cache the result
+      setCachedAdminStatus(userId, isAdmin);
+      
       return isAdmin;
     } catch (error) {
       console.error('Error fetching admin status:', error instanceof Error ? error.message : String(error));
-      return false;
+      // Return cached value if available, otherwise false
+      const cached = getCachedAdminStatus(userId);
+      return cached !== null ? cached : false;
     }
   };
 
@@ -104,13 +164,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearSessionStartTime();
           }
         } else {
-          // Set session first, then check admin status asynchronously
+          // Check cache first for immediate admin status
+          const cachedAdmin = getCachedAdminStatus(currentSession.user.id);
+          
+          // Set session and cached admin status immediately
           if (isMountedRef.current) {
             setSession(currentSession);
+            if (cachedAdmin !== null) {
+              setIsAdmin(cachedAdmin);
+            }
           }
           
-          // Check admin status in background (don't block)
-          fetchAdminStatus(currentSession.user.id).then(adminStatus => {
+          // Fetch fresh admin status in background (will use cache if available)
+          fetchAdminStatus(currentSession.user.id, true).then(adminStatus => {
             if (isMountedRef.current) {
               setIsAdmin(adminStatus);
             }
@@ -187,6 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setIsAdmin(false);
       clearSessionStartTime();
+      clearCachedAdminStatus(); // Clear all cached admin statuses
       
       // Force a hard navigation to clear any cached state
       if (typeof window !== 'undefined') {
@@ -203,6 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setIsAdmin(false);
       clearSessionStartTime();
+      clearCachedAdminStatus(); // Clear all cached admin statuses
       
       if (typeof window !== 'undefined') {
         setTimeout(() => {
@@ -235,6 +303,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(null);
           setIsAdmin(false);
           clearSessionStartTime();
+          clearCachedAdminStatus(); // Clear all cached admin statuses
         }
         return;
       }
@@ -256,23 +325,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          // Set session FIRST, before fetching admin status
+          // Set session FIRST, with cached admin status if available
           if (isMountedRef.current) {
             setSession(currentSession);
+            
+            // Use cached admin status immediately if available
+            const cachedAdmin = getCachedAdminStatus(currentSession.user.id);
+            if (cachedAdmin !== null) {
+              setIsAdmin(cachedAdmin);
+            }
           }
 
-          // Check admin status (async, don't block)
+          // Check admin status (async, will use cache and update if needed)
           try {
-            const adminStatus = await fetchAdminStatus(currentSession.user.id);
+            const adminStatus = await fetchAdminStatus(currentSession.user.id, true);
             
             if (isMountedRef.current) {
               setIsAdmin(adminStatus);
             }
           } catch (error) {
             console.error('Failed to fetch admin status:', error);
-            if (isMountedRef.current) {
-              setIsAdmin(false);
-            }
+            // Keep cached value if fetch fails
           }
         } else {
           if (isMountedRef.current) {
