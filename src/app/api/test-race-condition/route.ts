@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
+    // Construct absolute URL from request
+    const baseUrl = request.nextUrl.origin;
+    
     // Simulate two concurrent requests
     const promises = [];
     
     for (let i = 0; i < 3; i++) {
       promises.push(
-        fetch('/api/submit-form', {
+        fetch(`${baseUrl}/api/submit-form`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
