@@ -9,7 +9,7 @@ export default function ContactForm() {
     userType: 'ud-grad-student',
     email: '',
     fullName: '',
-    selectedClubs: ['1'], // Auto-select UDSSA by default
+    selectedClubs: ['1'], // Auto-select UD-DSSA by default
     interestedInOfficer: false
   });
   
@@ -95,7 +95,7 @@ export default function ContactForm() {
       
       setSubmitResult({
         success: true,
-        message: `Welcome to the UDSSA community, ${formData.fullName}! Your email, ${formData.email}, has been registered to our mailing list and we look forward to interacting with you in the future.`
+        message: `Welcome to the UD-DSSA community, ${formData.fullName}! Your email, ${formData.email}, has been registered to our mailing list and we look forward to interacting with you in the future.`
       });
       
       // Reset form after a delay
@@ -104,7 +104,7 @@ export default function ContactForm() {
           userType: 'ud-grad-student',
           email: '',
           fullName: '',
-          selectedClubs: ['1'], // Auto-select UDSSA on reset
+          selectedClubs: ['1'], // Auto-select UD-DSSA on reset
           interestedInOfficer: false
         });
         setSubmitResult(null);
@@ -126,7 +126,7 @@ export default function ContactForm() {
         [field]: value
       };
       
-      // Auto-select UDSSA when user type changes to any student type
+      // Auto-select UD-DSSA when user type changes to any student type
       if (field === 'userType' && (value === 'ud-grad-student' || value === 'undergraduate-student' || value === 'other-university-student')) {
         const currentClubs = (newData as Partial<UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm>).selectedClubs || [];
         if (!currentClubs.includes('1')) {
@@ -149,7 +149,7 @@ export default function ContactForm() {
   const handleClubToggle = (clubId: string) => {
     if (formData.userType !== 'ud-grad-student' && formData.userType !== 'undergraduate-student' && formData.userType !== 'other-university-student') return;
     
-    // Prevent unchecking UDSSA (id: '1') since they're already part of it
+    // Prevent unchecking UD-DSSA (id: '1') since they're already part of it
     if (clubId === '1') return;
     
     const currentClubs = ((formData as UDGradStudentForm | UndergraduateStudentForm | OtherUniversityStudentForm).selectedClubs || []);
@@ -345,7 +345,7 @@ export default function ContactForm() {
                   />
                   <div>
                     <div className="font-medium text-gray-900">
-                      Interested in UDSSA Leadership Position
+                      Interested in UD-DSSA Leadership Position
                     </div>
                     <div className="text-sm text-gray-600">
                       Help lead the organization and shape the future of UD's data science community
@@ -449,7 +449,7 @@ export default function ContactForm() {
                 value={(formData as Partial<IndustryAcademicForm>).notes || ''}
                 onChange={(e) => handleInputChange('notes', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-primary"
-                placeholder="Tell us how you'd like to get involved with UDSSA..."
+                placeholder="Tell us how you'd like to get involved with UD-DSSA..."
               />
             </div>
           </>

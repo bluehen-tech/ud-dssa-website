@@ -8,7 +8,7 @@ export interface Club {
 export const dataScienceClubs: Club[] = [
   {
     id: '1',
-    name: 'UD Data Science Student Association (UDSSA)',
+    name: 'Data Science Student Association @ UD (UD-DSSA)',
     description: 'Showcases our graduate talent, fosters cross-disciplinary learning, and builds a vibrant data science community through collaboration and industry partnerships',
     category: 'technical'
   },

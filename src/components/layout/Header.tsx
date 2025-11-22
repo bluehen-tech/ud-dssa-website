@@ -25,12 +25,14 @@ export default function Header() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-2xl font-bold text-blue-primary">
-                UDSSA
+              <Link href="/" className="flex flex-col">
+                <span className="text-2xl font-bold text-blue-primary leading-tight">
+                  DSSA @ University of Delaware
+                </span>
+                <span className="text-xs text-gray-500 leading-tight">
+                  bluehen-dssa.org
+                </span>
               </Link>
-              <span className="ml-2 text-sm text-gray-600 hidden sm:block">
-                @ University of Delaware
-              </span>
             </div>
             <nav className="hidden md:ml-6 md:flex md:space-x-8">
               <Link href="/" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">

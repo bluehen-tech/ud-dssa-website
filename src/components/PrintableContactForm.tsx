@@ -22,7 +22,7 @@ export default function PrintableContactForm() {
   return (
     <div className="max-w-2xl mx-auto bg-white p-4 rounded-lg shadow-lg print:shadow-none print:p-2">
       <h2 className="text-xl font-bold text-blue-primary mb-4 text-center print:text-lg">
-        UDSSA Membership Form
+        UD-DSSA Membership Form
       </h2>
 
       <div className="space-y-4 print:space-y-2">
@@ -95,7 +95,7 @@ export default function PrintableContactForm() {
               onChange={(e) => handleInputChange('interestedInOfficer', e.target.checked)}
               className="mr-2 print:mr-1"
             />
-            <span className="text-gray-700 font-medium">Interested in becoming a UDSSA officer</span>
+            <span className="text-gray-700 font-medium">Interested in becoming a UD-DSSA officer</span>
           </label>
         </div>
       </div>

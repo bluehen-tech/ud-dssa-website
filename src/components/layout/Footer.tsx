@@ -25,7 +25,7 @@ export default function Footer() {
           </a>
         </div>
         <p className="mt-6 text-center text-base text-gray-500">
-          &copy; {new Date().getFullYear()} UD Data Science Student Association. All rights reserved.
+          &copy; {new Date().getFullYear()} Data Science Student Association @ UD. All rights reserved.
         </p>
       </div>
     </footer>

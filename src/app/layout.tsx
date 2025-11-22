@@ -7,8 +7,8 @@ import Footer from '@/components/layout/Footer';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'UD Data Science Student Association',
-  description: 'Home of the University of Delaware Data Science Student Association',
+  title: 'Data Science Student Association @ UD',
+  description: 'Home of the Data Science Student Association @ UD',
 };
 
 export default function RootLayout({

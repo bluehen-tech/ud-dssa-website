@@ -1,7 +1,7 @@
 {
   "name": "ud-dssa-website",
   "version": "1.0.0",
-  "description": "> Home of the UD Data Science Student Association: amplifying student visibility, connecting industry partners, attracting donations, hosting transformative events, and showcasing our tech stack built with a modern Next.js architecture. Student-friendly design with simple content management.",
+  "description": "> Home of the Data Science Student Association @ UD: amplifying student visibility, connecting industry partners, attracting donations, hosting transformative events, and showcasing our tech stack built with a modern Next.js architecture. Student-friendly design with simple content management.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

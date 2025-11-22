@@ -1,10 +1,10 @@
-# UD Data Science Student Association Website
+# Data Science Student Association @ UD Website
 
-> Home of the UD Data Science Student Association: amplifying student visibility, connecting industry partners, attracting donations, hosting transformative events, and showcasing our tech stack built with a modern Next.js architecture.
+> Home of the Data Science Student Association @ UD: amplifying student visibility, connecting industry partners, attracting donations, hosting transformative events, and showcasing our tech stack built with a modern Next.js architecture.
 
 ## Overview
 
-The official platform for the University of Delaware Data Science Student Association (UDSSA). We showcase member profiles, facilitate donations, market our services, and organize meaningful workshops and networking events to build the next generation of data scientists and raise the profile of UD's data science community.
+The official platform for the Data Science Student Association @ UD (UD-DSSA). We showcase member profiles, facilitate donations, market our services, and organize meaningful workshops and networking events to build the next generation of data scientists and raise the profile of UD's data science community.
 
 **Student-Friendly Design**: This project is intentionally built to be simple and accessible for student contributors. All content is managed through easy-to-edit TypeScript files, making it perfect for students rotating in and out of the project.
 
@@ -151,7 +151,7 @@ To deploy this project to Vercel:
 ## Contact
 
 For questions or support, contact:
-- UDSSA: dsi-info@udel.edu
+- UD-DSSA: dsi-info@udel.edu
 
 ## License
 

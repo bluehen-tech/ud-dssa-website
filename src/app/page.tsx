@@ -57,7 +57,7 @@ export default function Home() {
             <div className="relative bg-white p-6 rounded-lg border-2 border-blue-200">
               <div className="relative z-10">
                 <h1 className="text-4xl font-bold text-blue-primary sm:text-5xl md:text-6xl mb-4">
-            UD Data Science Student Association
+            Data Science Student Association @ UD
           </h1>
                 
                 <p className="text-xl text-gray-700 font-medium">
@@ -76,7 +76,7 @@ export default function Home() {
         }`}>
           <h2 className="text-3xl font-bold text-blue-primary mb-4">Our Mission</h2>
           <p className="text-lg text-gray-700">
-            The UD Data Science Student Association showcases graduate student talent, facilitates collaboration between data science clubs and events, and provides hands-on experience with industry tools through technology infrastructure development at UD and with industry partners.
+            The Data Science Student Association @ UD showcases graduate student talent, facilitates collaboration between data science clubs and events, and provides hands-on experience with industry tools through technology infrastructure development at UD and with industry partners.
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export default function Home() {
             </button>
           </div>
           <p className="text-lg text-gray-600 mb-6">
-            Whether you're a graduate student showcasing your projects, discovering events, and building infrastructure, or an industry professional looking to collaborate with UD's graduate talent and develop opportunities, UDSSA has something for you.
+            Whether you're a graduate student showcasing your projects, discovering events, and building infrastructure, or an industry professional looking to collaborate with UD's graduate talent and develop opportunities, UD-DSSA has something for you.
           </p>
         </div>
 
