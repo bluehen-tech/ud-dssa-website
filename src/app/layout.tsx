@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Data Science Student Association @ UD',
   description: 'Home of the Data Science Student Association @ UD',
+  icons: {
+    icon: '/images/dssa-logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -21,7 +24,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="flex flex-col min-h-screen">
           <Header />
-          <main className="flex-grow">
+          <main className="flex-grow pt-16">
             {children}
           </main>
           <Footer />

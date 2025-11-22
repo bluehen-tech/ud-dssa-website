@@ -1,7 +1,9 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
+import logo from '@/images/dssa-logo.png';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,18 +22,29 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm">
+    <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex flex-col">
-                <span className="text-2xl font-bold text-blue-primary leading-tight">
-                  DSSA @ University of Delaware
-                </span>
-                <span className="text-xs text-gray-500 leading-tight">
-                  bluehen-dssa.org
-                </span>
+              <Link href="/" className="flex items-center gap-3 group">
+                <div className="relative w-12 h-12 flex-shrink-0 opacity-90 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
+                  <Image
+                    src={logo}
+                    alt="DSSA Logo"
+                    fill
+                    className="object-cover object-top"
+                    priority
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-blue-primary leading-tight">
+                    DSSA @ University of Delaware
+                  </span>
+                  <span className="text-xs text-gray-500 leading-tight">
+                    bluehen-dssa.org
+                  </span>
+                </div>
               </Link>
             </div>
             <nav className="hidden md:ml-6 md:flex md:space-x-8">

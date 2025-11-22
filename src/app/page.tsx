@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import ContactForm from '@/components/ContactForm';
+import heroWatermark from '@/images/heroWatermark.png';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -27,7 +29,7 @@ export default function Home() {
     }, 100);
   };
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">      
+    <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="max-w-4xl w-full space-y-6 relative z-10">
         {/* Mobile-First Call to Action - Prominent for QR code users */}
         <div className={`block sm:hidden transition-all duration-1000 ${
@@ -54,15 +56,31 @@ export default function Home() {
             isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
           }`}>
             {/* Content Container - Clean White Background */}
-            <div className="relative bg-white p-6 rounded-lg border-2 border-blue-200">
+            <div className="relative bg-white p-6 rounded-lg border-2 border-blue-200 overflow-hidden">
+              {/* Subtle watermark background */}
+              <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
+                <Image
+                  src={heroWatermark}
+                  alt=""
+                  fill
+                  className="object-cover rounded-lg"
+                  aria-hidden="true"
+                />
+              </div>
               <div className="relative z-10">
-                <h1 className="text-4xl font-bold text-blue-primary sm:text-5xl md:text-6xl mb-4">
-            Data Science Student Association @ UD
-          </h1>
+                {/* Frosted glass backdrop for heading */}
+                <div className="relative bg-white/60 backdrop-blur-[1px] rounded-lg py-2 mb-4 inline-flex">
+                  <h1 className="text-4xl font-bold text-blue-primary sm:text-5xl md:text-6xl drop-shadow-sm m-0 p-0 leading-tight">
+                    Data Science Student Association @ UD
+                  </h1>
+                </div>
                 
-                <p className="text-xl text-gray-700 font-medium">
-                  Graduate student–led association building collaborative tools<br></br>and opportunities within UD’s data science ecosystem
-                </p>
+                {/* Frosted glass backdrop for paragraph */}
+                <div className="relative bg-white/60 backdrop-blur-[1px] rounded-lg px-3 py-2 inline-block">
+                  <p className="text-xl text-gray-700 font-medium drop-shadow-sm">
+                    Graduate student–led association building collaborative tools<br></br>and opportunities within UD's data science ecosystem
+                  </p>
+                </div>
               </div>
             </div>
 
