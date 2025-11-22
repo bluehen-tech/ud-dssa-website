@@ -2,11 +2,81 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase-browser';
+import { isSessionValid, setSessionStartTime, clearSessionStartTime } from '@/lib/session-utils';
+import type { Session } from '@supabase/supabase-js';
 import logo from '@/images/dssa-logo.png';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && isSessionValid(session)) {
+        setSessionStartTime(); // Ensure start time is set
+        setSession(session);
+      } else {
+        // Session invalid or expired, sign out
+        if (session) {
+          supabase.auth.signOut();
+        }
+        setSession(null);
+        clearSessionStartTime();
+      }
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session && isSessionValid(session)) {
+        setSessionStartTime(); // Set start time on login
+        setSession(session);
+      } else {
+        // Session invalid or expired
+        if (session) {
+          supabase.auth.signOut();
+        }
+        setSession(null);
+        clearSessionStartTime();
+      }
+    });
+
+    // Check session validity periodically (every minute)
+    const interval = setInterval(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && !isSessionValid(session)) {
+          // Session expired, sign out
+          supabase.auth.signOut();
+          setSession(null);
+          clearSessionStartTime();
+          router.push('/login?error=Session expired. Please sign in again.');
+        }
+      });
+    }, 60000); // Check every minute
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
+  }, [router]);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    clearSessionStartTime();
+    router.push('/');
+    router.refresh();
+  };
 
   const scrollToForm = () => {
     // Use setTimeout to ensure DOM is ready
@@ -33,6 +103,7 @@ export default function Header() {
                     src={logo}
                     alt="DSSA Logo"
                     fill
+                    sizes="48px"
                     className="object-cover object-top"
                     priority
                   />
@@ -51,15 +122,42 @@ export default function Header() {
               <Link href="/" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
                 Home
               </Link>
+              {session && (
+                <Link href="/opportunities" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
+                  Opportunities
+                </Link>
+              )}
             </nav>
           </div>
-          <div className="hidden md:flex md:items-center">
-            <button
-              onClick={scrollToForm}
-              className="px-3 py-1.5 bg-blue-primary text-white text-sm font-medium rounded-full hover:bg-blue-800 transition-colors duration-200"
-            >
-              Get Connected
-            </button>
+          <div className="hidden md:flex md:items-center gap-3">
+            {session ? (
+              <>
+                <span className="text-sm text-gray-600">
+                  {session.user.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-3 py-1.5 text-blue-primary text-sm font-medium rounded-full hover:text-blue-800 transition-colors duration-200"
+                >
+                  Sign In
+                </Link>
+                <button
+                  onClick={scrollToForm}
+                  className="px-3 py-1.5 bg-blue-primary text-white text-sm font-medium rounded-full hover:bg-blue-800 transition-colors duration-200"
+                >
+                  Get Connected
+                </button>
+              </>
+            )}
           </div>
           <div className="-mr-2 flex items-center md:hidden">
             <button
@@ -85,18 +183,57 @@ export default function Header() {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="pt-2 pb-3 space-y-1">
-            <Link href="/" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary">
+            <Link 
+              href="/" 
+              onClick={() => setIsMenuOpen(false)}
+              className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary"
+            >
               Home
             </Link>
-            <button
-              onClick={() => {
-                scrollToForm();
-                setIsMenuOpen(false);
-              }}
-              className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white bg-blue-primary hover:bg-blue-800 transition-colors duration-200"
-            >
-              Get Connected
-            </button>
+            {session && (
+              <Link 
+                href="/opportunities" 
+                onClick={() => setIsMenuOpen(false)}
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary"
+              >
+                Opportunities
+              </Link>
+            )}
+            {session ? (
+              <>
+                <div className="block pl-3 pr-4 py-2 text-sm text-gray-600">
+                  {session.user.email}
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-200"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary"
+                >
+                  Sign In
+                </Link>
+                <button
+                  onClick={() => {
+                    scrollToForm();
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white bg-blue-primary hover:bg-blue-800 transition-colors duration-200"
+                >
+                  Get Connected
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

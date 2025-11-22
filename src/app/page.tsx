@@ -63,6 +63,7 @@ export default function Home() {
                   src={heroWatermark}
                   alt=""
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 896px, 1152px"
                   className="object-cover rounded-lg"
                   aria-hidden="true"
                 />
