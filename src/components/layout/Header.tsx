@@ -2,84 +2,20 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase-browser';
-import { isSessionValid, setSessionStartTime, clearSessionStartTime } from '@/lib/session-utils';
-import type { Session } from '@supabase/supabase-js';
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/images/dssa-logo.png';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-
-  useEffect(() => {
-    const supabase = createClient();
-    
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && isSessionValid(session)) {
-        setSessionStartTime(); // Ensure start time is set
-        setSession(session);
-      } else {
-        // Session invalid or expired, sign out
-        if (session) {
-          supabase.auth.signOut();
-        }
-        setSession(null);
-        clearSessionStartTime();
-      }
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && isSessionValid(session)) {
-        setSessionStartTime(); // Set start time on login
-        setSession(session);
-      } else {
-        // Session invalid or expired
-        if (session) {
-          supabase.auth.signOut();
-        }
-        setSession(null);
-        clearSessionStartTime();
-      }
-    });
-
-    // Check session validity periodically (every minute)
-    const interval = setInterval(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session && !isSessionValid(session)) {
-          // Session expired, sign out
-          supabase.auth.signOut();
-          setSession(null);
-          clearSessionStartTime();
-          router.push('/login?error=Session expired. Please sign in again.');
-        }
-      });
-    }, 60000); // Check every minute
-
-    return () => {
-      subscription.unsubscribe();
-      clearInterval(interval);
-    };
-  }, [router]);
+  const { session, isAdmin, signOut } = useAuth();
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    clearSessionStartTime();
-    router.push('/');
-    router.refresh();
+    await signOut();
+    setIsMenuOpen(false);
   };
 
   const scrollToForm = () => {
-    // Use setTimeout to ensure DOM is ready
     setTimeout(() => {
       const formElement = document.getElementById('contact-form');
       if (formElement) {
@@ -132,9 +68,14 @@ export default function Header() {
           <div className="hidden md:flex md:items-center gap-3">
             {session ? (
               <>
-                <span className="text-sm text-gray-600">
-                  {session.user.email}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm text-gray-600">
+                    {session.user.email}
+                  </span>
+                  <span className="text-xs text-gray-400 mt-0.5">
+                    {isAdmin ? 'Admin' : 'Member'}
+                  </span>
+                </div>
                 <button
                   onClick={handleLogout}
                   className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-300 transition-colors duration-200"
@@ -179,7 +120,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state */}
+      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="pt-2 pb-3 space-y-1">
@@ -202,13 +143,13 @@ export default function Header() {
             {session ? (
               <>
                 <div className="block pl-3 pr-4 py-2 text-sm text-gray-600">
-                  {session.user.email}
+                  <div>{session.user.email}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {isAdmin ? 'Admin' : 'Member'}
+                  </div>
                 </div>
                 <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={handleLogout}
                   className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-200"
                 >
                   Sign Out
@@ -239,4 +180,4 @@ export default function Header() {
       )}
     </header>
   );
-} 
+}

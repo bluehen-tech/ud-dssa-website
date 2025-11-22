@@ -114,8 +114,8 @@ export default function Home() {
             <p className="text-gray-600">Discover workshops, hackathons, and networking opportunities across all of UD and inclusive of all data science clubs.</p>
           </div>
           <div className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <h3 className="text-xl font-semibold text-blue-primary mb-2">Experiential Learning</h3>
-            <p className="text-gray-600">Gain hands-on experience through industry partnerships and internal infrastructure projects including our new website, member portfolio platform, and email marketing infrastructure.</p>
+            <h3 className="text-xl font-semibold text-blue-primary mb-2">Experiential Learning & Opportunities</h3>
+            <p className="text-gray-600">Gain hands-on experience through industry partnerships, internships, and internal infrastructure projects including our new website, member portfolio platform, and email marketing infrastructure.</p>
           </div>
           </div>
         </div>

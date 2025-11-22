@@ -6,8 +6,8 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const supabase = createMiddlewareClient({ req: request, res: response });
 
-  // Protected routes
-  const protectedPaths = ['/opportunities', '/officers'];
+  // Protected routes (only /officers requires authentication)
+  const protectedPaths = ['/officers'];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );

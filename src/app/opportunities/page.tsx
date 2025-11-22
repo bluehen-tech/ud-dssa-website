@@ -1,76 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase-browser';
-import { isSessionValid, setSessionStartTime } from '@/lib/session-utils';
+import { useAuth } from '@/contexts/AuthContext';
 import { opportunities } from '@/data/opportunities';
 import { OpportunityType } from '@/types/opportunity';
-import type { Session } from '@supabase/supabase-js';
 
 export default function OpportunitiesPage() {
-  const router = useRouter();
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createClient();
-    
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && isSessionValid(session)) {
-        setSessionStartTime(); // Ensure start time is set
-        setSession(session);
-        
-        // Verify email is @udel.edu
-        const userEmail = session.user.email;
-        if (!userEmail || !userEmail.endsWith('@udel.edu')) {
-          supabase.auth.signOut();
-          router.push('/login?error=Invalid email domain');
-          return;
-        }
-      } else {
-        // No valid session, redirect to login
-        router.push('/login');
-        return;
-      }
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && isSessionValid(session)) {
-        setSessionStartTime();
-        setSession(session);
-      } else {
-        setSession(null);
-        router.push('/login');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="text-center">
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If no session, don't render (redirect will happen)
-  if (!session) {
-    return null;
-  }
-
-  const userEmail = session.user.email;
+  const { session, isAdmin, isLoading } = useAuth();
 
   const getTypeColor = (type: OpportunityType): string => {
     const colors: Record<OpportunityType, string> = {
@@ -87,6 +23,67 @@ export default function OpportunitiesPage() {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no session, show sign-in prompt
+  if (!session) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="bg-white p-8 rounded-lg shadow-lg mb-6">
+            <div className="mb-4">
+              <h1 className="text-4xl font-bold text-blue-primary mb-2">
+                Opportunities
+              </h1>
+              <p className="text-xl text-gray-600">
+                Career, internship, and project opportunities curated for DSSA members.
+              </p>
+            </div>
+          </div>
+
+          {/* Sign In Prompt */}
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-blue-primary mb-4">
+              Sign In Required
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Please sign in with your UD email to view opportunities.
+            </p>
+            <Link
+              href="/login?redirect=/opportunities"
+              className="inline-block px-6 py-3 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200"
+            >
+              Sign In
+            </Link>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <Link
+              href="/"
+              className="px-4 py-2 text-blue-primary hover:text-blue-800 hover:underline"
+            >
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const userEmail = session.user.email;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
@@ -105,6 +102,9 @@ export default function OpportunitiesPage() {
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-sm text-gray-600">
                 <strong>Signed in as:</strong> {userEmail}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {isAdmin ? 'Admin' : 'Member'}
               </p>
             </div>
           </div>
@@ -242,4 +242,3 @@ export default function OpportunitiesPage() {
     </div>
   );
 }
-
