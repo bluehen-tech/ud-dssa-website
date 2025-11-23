@@ -65,8 +65,8 @@ USING expression:
 1. Run your app in development mode: `npm run dev`
 2. Sign in with your @udel.edu email
 3. Go to the Opportunities page
-4. You should see the "Opportunity Resumes" overview at the top
-5. Open any opportunity card and use the "Attach Resume" button
+4. Each opportunity card shows its own resume section
+5. Use the "Attach Resume" button on a card to upload a file
 6. Verify you can download, replace, and delete the resume for that opportunity
 
 **Note:** The production build (`npm run build`) may fail with TypeScript errors until you've created the Supabase tables and generated types. Use `npm run dev` for development and testing. The TypeScript errors will resolve once the database tables exist and Supabase generates the type definitions.

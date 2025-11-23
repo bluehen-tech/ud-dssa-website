@@ -310,95 +310,23 @@ export default function OpportunitiesPage() {
               </p>
             </div>
           </div>
-
-          {/* Opportunity Resume Overview */}
-          <div className="mt-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <svg className="w-5 h-5 text-blue-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <h3 className="text-lg font-semibold text-blue-primary">Opportunity Resumes</h3>
-                </div>
-                <p className="text-sm text-gray-700 mb-4">
-                  Attach a tailored resume to each opportunity. Use the buttons on every listing to upload, replace, or delete that specific file.
-                </p>
-
-                {isResumeLoading ? (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="text-sm">Loading resume status...</span>
-                  </div>
-                ) : Object.keys(resumesByOpportunity).length > 0 ? (
-                  <div className="space-y-3">
-                    {Object.entries(resumesByOpportunity).map(([opportunityId, opportunityResume]) => {
-                      const associatedOpportunity = opportunities.find((opp) => opp.id === opportunityId);
-                      return (
-                        <div
-                          key={opportunityId}
-                          className="bg-white/70 border border-gray-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                        >
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {associatedOpportunity ? associatedOpportunity.title : 'Opportunity removed'}
-                            </p>
-                            <p className="text-sm text-gray-700">{opportunityResume.file_name}</p>
-                            <p className="text-xs text-gray-500">
-                              Uploaded{' '}
-                              {new Date(opportunityResume.uploaded_at).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              })}{' '}
-                              • {formatFileSize(opportunityResume.file_size)}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => downloadResume(opportunityId)}
-                              className="px-3 py-1.5 bg-white border border-blue-primary text-blue-primary text-xs font-medium rounded-md hover:bg-blue-50 transition-colors"
-                            >
-                              Download
-                            </button>
-                            <button
-                              onClick={() => setResumeModalOpportunityId(opportunityId)}
-                              className="px-3 py-1.5 bg-blue-primary text-white text-xs font-medium rounded-md hover:bg-blue-800 transition-colors"
-                            >
-                              Replace
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmId(opportunityId)}
-                              className="px-3 py-1.5 bg-white border border-red-500 text-red-500 text-xs font-medium rounded-md hover:bg-red-50 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-white/70 border border-dashed border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-700">
-                      No resumes attached yet. Open any opportunity below and use the “Attach Resume” button to upload a version
-                      crafted for that role.
-                    </p>
-                  </div>
-                )}
-
-                {resumeError && (
-                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-sm text-red-800">{resumeError}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
+
+        {resumeError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">{resumeError}</p>
+          </div>
+        )}
+
+        {isResumeLoading && (
+          <div className="mb-4 flex items-center gap-2 text-gray-600 text-sm">
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading resume statuses...
+          </div>
+        )}
 
         {/* Opportunities List */}
         {opportunities.length === 0 ? (

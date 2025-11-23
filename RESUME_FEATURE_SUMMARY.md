@@ -96,11 +96,10 @@ See `RESUME_UPLOAD_QUICKSTART.md` for detailed instructions!
 - **Authentication:** Only authenticated @udel.edu users can upload
 
 ### User Experience
-1. Users see an "Opportunity Resumes" overview card at the top of the Opportunities page
-2. Each opportunity card shows whether a resume is attached
-3. Clicking "Attach Resume" opens the drag-and-drop modal scoped to that opportunity
-4. After uploading, they can download, replace, or delete the resume directly from that listing
-5. Each opportunity stores its own resume (uploading again replaces just that file)
+1. Each opportunity card shows whether a tailored resume is attached
+2. Clicking "Attach Resume" opens the drag-and-drop modal scoped to that opportunity
+3. After uploading, users can download, replace, or delete the resume directly from that listing
+4. Each opportunity stores its own resume (uploading again replaces just that file)
 
 ## Important Notes
 
