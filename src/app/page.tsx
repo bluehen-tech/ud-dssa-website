@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import ContactForm from '@/components/ContactForm';
 import heroWatermark from '@/images/heroWatermark.png';
+import { opportunities } from '@/data/opportunities';
+import { OpportunityType } from '@/types/opportunity';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -28,6 +31,27 @@ export default function Home() {
       }
     }, 100);
   };
+
+  const getTypeColor = (type: OpportunityType): string => {
+    const colors: Record<OpportunityType, string> = {
+      job: 'bg-green-100 text-green-800 border-green-200',
+      internship: 'bg-blue-100 text-blue-800 border-blue-200',
+      project: 'bg-purple-100 text-purple-800 border-purple-200',
+      research: 'bg-orange-100 text-orange-800 border-orange-200',
+      event: 'bg-pink-100 text-pink-800 border-pink-200',
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  // Get the 3 most recent opportunities
+  const recentOpportunities = opportunities
+    .sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
+    .slice(0, 3);
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="max-w-4xl w-full space-y-6 relative z-10">
@@ -119,6 +143,82 @@ export default function Home() {
           </div>
           </div>
         </div>
+
+        {/* Recent Opportunities Section */}
+        {recentOpportunities.length > 0 && (
+          <div className={`transition-all duration-1000 delay-1000 ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-3xl font-bold text-blue-primary">Recent Opportunities</h2>
+                <Link
+                  href="/opportunities"
+                  className="text-blue-primary hover:text-blue-800 hover:underline font-medium flex items-center gap-1"
+                >
+                  View All
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {recentOpportunities.map((opportunity) => (
+                  <Link
+                    key={opportunity.id}
+                    href={`/opportunities/${opportunity.id}`}
+                    className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-primary"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-lg font-bold text-blue-primary flex-1 line-clamp-2">
+                        {opportunity.title}
+                      </h3>
+                      <span
+                        className={`ml-2 px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(
+                          opportunity.type
+                        )} whitespace-nowrap`}
+                      >
+                        {opportunity.type.charAt(0).toUpperCase() + opportunity.type.slice(1)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 font-medium mb-2">{opportunity.organization}</p>
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">{opportunity.description}</p>
+                    <div className="flex flex-col gap-1 text-xs text-gray-600">
+                      {opportunity.location && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {opportunity.location}
+                        </span>
+                      )}
+                      {opportunity.deadline && (
+                        <span className="flex items-center gap-1 text-red-600 font-medium">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Deadline: {formatDate(opportunity.deadline)}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="text-center mt-4 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Sign in with your <strong>@udel.edu</strong> email to view full details and apply
+                </p>
+                <p className="text-sm text-gray-600 pt-2 border-t border-blue-200">
+                  <strong>Employers:</strong> Have an opportunity to share? Contact us at{' '}
+                  <a href="mailto:dsi-info@udel.edu" className="text-blue-primary hover:text-blue-800 hover:underline font-medium">
+                    dsi-info@udel.edu
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Call to Action */}
         <div className={`text-center mb-6 transition-all duration-1000 delay-1100 ${
