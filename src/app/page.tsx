@@ -7,9 +7,15 @@ import ContactForm from '@/components/ContactForm';
 import heroWatermark from '@/images/heroWatermark.png';
 import { opportunities } from '@/data/opportunities';
 import { OpportunityType } from '@/types/opportunity';
+import { Event } from '@/types/event';
+import { createClient } from '@/lib/supabase-browser';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const { session, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     // Trigger animations after component mounts
@@ -18,6 +24,43 @@ export default function Home() {
     }, 100);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUpcomingEvents = async () => {
+      try {
+        const supabase = createClient();
+        const nowIso = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .gte('event_date', nowIso)
+          .order('event_date', { ascending: true })
+          .limit(3) as any;
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted) {
+          setUpcomingEvents(data || []);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching upcoming events:', fetchError);
+      }
+    };
+
+    fetchUpcomingEvents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setCurrentEventIndex(0);
+  }, [upcomingEvents.length]);
 
   const scrollToForm = () => {
     // Use setTimeout to ensure DOM is ready
@@ -43,6 +86,17 @@ export default function Home() {
     return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
+  const formatEventDateTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -52,24 +106,113 @@ export default function Home() {
   const recentOpportunities = opportunities
     .sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
     .slice(0, 3);
+  const showMobileCTA = !authLoading && !session;
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="max-w-4xl w-full space-y-6 relative z-10">
         {/* Mobile-First Call to Action - Prominent for QR code users */}
-        <div className={`block sm:hidden transition-all duration-1000 ${
-          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
-          <div className="bg-blue-primary text-white p-4 rounded-lg shadow-lg text-center mb-4">
-            <h2 className="text-xl font-bold mb-2">Join UD's Student-Led Data Science Community!</h2>
-            <p className="text-sm mb-3">Students, faculty, and industry partners are encouraged to get connected! Click the button below to get started.</p>
-            <button
-              onClick={scrollToForm}
-              className="px-6 py-3 bg-white text-blue-primary font-bold rounded-md hover:bg-gray-100 hover:scale-105 transition-all duration-200 shadow-md"
-            >
-              Get Connected Now
-            </button>
+        {showMobileCTA && (
+          <div className={`block sm:hidden transition-all duration-1000 ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+            <div className="bg-blue-primary text-white p-4 rounded-lg shadow-lg text-center mb-4">
+              <h2 className="text-xl font-bold mb-2">Join UD's Student-Led Data Science Community!</h2>
+              <p className="text-sm mb-3">Students, faculty, and industry partners are encouraged to get connected! Click the button below to get started.</p>
+              <button
+                onClick={scrollToForm}
+                className="px-6 py-3 bg-white text-blue-primary font-bold rounded-md hover:bg-gray-100 hover:scale-105 transition-all duration-200 shadow-md"
+              >
+                Get Connected Now
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Upcoming Events Highlight */}
+        {upcomingEvents.length > 0 && (
+          <div className={`transition-all duration-700 delay-50 ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}>
+            <div className="relative flex flex-col gap-4 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-900 via-blue-700 to-blue-500 p-5 text-white shadow-xl md:flex-row md:items-center md:justify-between">
+              <div className="relative z-10 max-w-xl space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.5em] text-blue-100/80">Upcoming Events</p>
+                <h2 className="text-2xl font-bold leading-tight sm:text-3xl">Catch the next DSSA experience</h2>
+                <p className="text-sm text-blue-100/80">
+                  Stay plugged into workshops, meetups, and collaborations happening now.
+                </p>
+                <Link
+                  href="/events"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/10"
+                >
+                  Browse all events
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+
+              <div className="relative z-10 w-full max-w-sm self-stretch md:max-w-md">
+                {upcomingEvents.length > 1 && (
+                  <div className="absolute -top-3 right-0 flex gap-2">
+                    <button
+                      aria-label="Previous event"
+                      onClick={() =>
+                        setCurrentEventIndex((prev) => (prev - 1 + upcomingEvents.length) % upcomingEvents.length)
+                      }
+                      className="rounded-full border border-white/30 bg-white/10 p-2 text-white transition hover:bg-white/20"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      aria-label="Next event"
+                      onClick={() => setCurrentEventIndex((prev) => (prev + 1) % upcomingEvents.length)}
+                      className="rounded-full border border-white/30 bg-white/10 p-2 text-white transition hover:bg-white/20"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                {upcomingEvents[currentEventIndex] && (
+                  <Link
+                    href="/events"
+                    className="group block h-full rounded-2xl border border-white/20 bg-white/10 p-4 pt-6 shadow-lg backdrop-blur transition hover:bg-white/15"
+                  >
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.4em] text-blue-100/70">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                      Featured
+                    </div>
+                    <h3 className="mt-2 text-xl font-bold leading-snug text-white group-hover:text-white">
+                      {upcomingEvents[currentEventIndex].title}
+                    </h3>
+                    <p className="mt-1 text-sm font-medium text-blue-100/90">
+                      {formatEventDateTime(upcomingEvents[currentEventIndex].event_date)}
+                    </p>
+                    <p className="mt-3 text-sm text-blue-50 line-clamp-3">
+                      {upcomingEvents[currentEventIndex].description}
+                    </p>
+                    {upcomingEvents.length > 1 && (
+                      <div className="mt-4 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.4em] text-blue-100/70">
+                        {upcomingEvents.map((_, index) => (
+                          <span
+                            key={`indicator-${index}`}
+                            className={`h-1.5 w-1.5 rounded-full transition ${
+                              currentEventIndex === index ? 'bg-white' : 'bg-white/30'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section - Zaxxon Style */}
         <div className={`text-center transition-all duration-1000 ${

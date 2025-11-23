@@ -189,59 +189,8 @@ export default function EventsPage() {
     );
   }
 
-  // If no session, show limited preview
-  if (!session) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="bg-white p-8 rounded-lg shadow-lg mb-6">
-            <div className="mb-4">
-              <h1 className="text-4xl font-bold text-blue-primary mb-2">
-                Events
-              </h1>
-              <p className="text-xl text-gray-600">
-                Upcoming events and activities for DSSA members.
-              </p>
-            </div>
-          </div>
-
-          {/* Sign In Prompt */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-primary p-8 rounded-lg shadow-lg text-center mb-6">
-            <div className="flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-blue-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <h2 className="text-2xl font-bold text-blue-primary">
-                Sign In to View Events
-              </h2>
-            </div>
-            <p className="text-gray-700 mb-6 text-lg">
-              Sign in with your <strong>@udel.edu</strong> email to view event details and flyers.
-            </p>
-            <Link
-              href="/login?redirect=/events"
-              className="inline-block px-8 py-3 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200 shadow-md"
-            >
-              Sign In with UD Email
-            </Link>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <Link
-              href="/"
-              className="px-4 py-2 text-blue-primary hover:text-blue-800 hover:underline"
-            >
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const userEmail = session.user.email;
+  const userEmail = session?.user?.email;
+  const canManageEvents = Boolean(session && isAdmin);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
@@ -257,18 +206,20 @@ export default function EventsPage() {
                 Upcoming events and activities for DSSA members.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-600">
-                <strong>Signed in as:</strong> {userEmail}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {isAdmin ? 'Admin' : 'Member'}
-              </p>
-            </div>
+            {session && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-600">
+                  <strong>Signed in as:</strong> {userEmail}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {isAdmin ? 'Admin' : 'Member'}
+                </p>
+              </div>
+            )}
           </div>
-          
+
           {/* Admin: Add Event Button */}
-          {isAdmin && (
+          {canManageEvents && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
@@ -281,7 +232,7 @@ export default function EventsPage() {
         </div>
 
         {/* Admin: Add Event Form */}
-        {isAdmin && showAddForm && (
+        {canManageEvents && showAddForm && (
           <div className="bg-white p-8 rounded-lg shadow-lg mb-6">
             <h2 className="text-2xl font-bold text-blue-primary mb-4">Add New Event</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -449,7 +400,7 @@ export default function EventsPage() {
                   </div>
 
                   {/* Admin: Delete Button */}
-                  {isAdmin && (
+                  {canManageEvents && (
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleDelete(event.id, event.flyer_url)}
