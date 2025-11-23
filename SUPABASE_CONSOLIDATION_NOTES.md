@@ -29,7 +29,7 @@ Consolidated all Supabase clients to use the modern `@supabase/ssr` package with
 - `src/contexts/AuthContext.tsx` - Authentication state management
 - `src/app/login/page.tsx` - Magic link login
 - `src/app/events/page.tsx` - Events display
-- `src/hooks/useResumeUpload.ts` - Resume uploads
+ - `src/hooks/useOpportunityResumes.ts` - Resume uploads
 
 ### 3. Server Client (Server Components & API Routes)
 **File: `src/lib/supabase-server.ts`**

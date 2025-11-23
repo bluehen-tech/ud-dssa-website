@@ -8,7 +8,7 @@ I've implemented the resume upload feature! Here's what you need to do to make i
 
 1. Go to your Supabase Dashboard → SQL Editor
 2. Open and run the file: `supabase/RESUME_UPLOADS_SETUP.sql`
-3. This creates the `resume_uploads` table with proper RLS policies
+3. This creates the `opportunity_resumes` table with proper RLS policies (one resume per opportunity per user)
 
 ### 2. Create the Storage Bucket (Required)
 
@@ -65,9 +65,9 @@ USING expression:
 1. Run your app in development mode: `npm run dev`
 2. Sign in with your @udel.edu email
 3. Go to the Opportunities page
-4. You should see a "Your Resume" section at the top
-5. Try uploading a PDF or Word document (max 5MB)
-6. Verify you can download and delete your resume
+4. You should see the "Opportunity Resumes" overview at the top
+5. Open any opportunity card and use the "Attach Resume" button
+6. Verify you can download, replace, and delete the resume for that opportunity
 
 **Note:** The production build (`npm run build`) may fail with TypeScript errors until you've created the Supabase tables and generated types. Use `npm run dev` for development and testing. The TypeScript errors will resolve once the database tables exist and Supabase generates the type definitions.
 
@@ -75,7 +75,7 @@ USING expression:
 
 ### Files Created:
 - ✅ `supabase/RESUME_UPLOADS_SETUP.sql` - Database schema and policies
-- ✅ `src/hooks/useResumeUpload.ts` - React hook for resume management
+- ✅ `src/hooks/useOpportunityResumes.ts` - React hook for per-opportunity resume management
 - ✅ `src/components/ResumeUploadModal.tsx` - Upload modal component
 - ✅ `docs/RESUME_UPLOADS_SETUP.md` - Detailed setup guide
 
@@ -83,21 +83,18 @@ USING expression:
 - ✅ `src/app/opportunities/page.tsx` - Added resume upload UI
 
 ### Features:
-- ✅ Upload resume (PDF, DOC, DOCX, max 5MB)
-- ✅ View uploaded resume status
-- ✅ Download resume
-- ✅ Replace resume
-- ✅ Delete resume
+- ✅ Upload resume (PDF, DOC, DOCX, max 5MB) per opportunity
+- ✅ View uploaded resume status per opportunity
+- ✅ Download, replace, or delete a resume for each opportunity
+- ✅ Maintain different resumes for different opportunities
 - ✅ Secure file storage with RLS
-- ✅ Beautiful drag-and-drop UI
-- ✅ File validation
-- ✅ Error handling
+- ✅ Drag-and-drop upload UI with validation and error handling
 
 ## How It Works
 
-1. **Storage Structure**: Files are stored as `resumes/{user_id}/resume_{timestamp}.{ext}`
+1. **Storage Structure**: Files are stored as `resumes/{opportunity_id}/{user_id}/{username}-{opportunity}-{timestamp}.{ext}`
 2. **Security**: Users can only access their own files (enforced by RLS)
-3. **One Resume Per User**: Uploading a new resume replaces the old one
+3. **One Resume Per Opportunity**: Uploading again for the same opportunity replaces the previous file
 4. **File Validation**: Client-side validation for file type and size
 
 ## Need Help?

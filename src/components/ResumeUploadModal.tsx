@@ -7,6 +7,7 @@ interface ResumeUploadModalProps {
   onClose: () => void;
   onUpload: (file: File) => Promise<boolean>;
   isUploading: boolean;
+  opportunityTitle?: string;
 }
 
 export default function ResumeUploadModal({
@@ -14,6 +15,7 @@ export default function ResumeUploadModal({
   onClose,
   onUpload,
   isUploading,
+  opportunityTitle,
 }: ResumeUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +108,16 @@ export default function ResumeUploadModal({
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-blue-primary">Upload Your Resume</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-blue-primary">
+                {opportunityTitle ? `Upload Resume for ${opportunityTitle}` : 'Upload Your Resume'}
+              </h2>
+              {opportunityTitle && (
+                <p className="text-sm text-gray-500 mt-1">
+                  This file will only be attached to <span className="font-semibold">{opportunityTitle}</span>.
+                </p>
+              )}
+            </div>
             <button
               onClick={handleClose}
               disabled={isUploading}
@@ -118,7 +129,7 @@ export default function ResumeUploadModal({
             </button>
           </div>
           <p className="text-gray-600 mt-2">
-            Upload your resume to apply for opportunities. Accepted formats: PDF, DOC, DOCX (max 5MB)
+            Upload the version of your resume you want to share for this opportunity. Accepted formats: PDF, DOC, DOCX (max 5MB)
           </p>
         </div>
 
@@ -209,12 +220,12 @@ export default function ResumeUploadModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">About Resume Uploads:</p>
+                <p className="font-medium mb-1">About Opportunity-Specific Resumes:</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Your resume will be stored securely and only accessible to you</li>
-                  <li>You can update or delete your resume at any time</li>
-                  <li>Only one resume can be uploaded at a time</li>
-                  <li>Uploading a new resume will replace your existing one</li>
+                  <li>Your resume for this opportunity is stored securely and only accessible to you</li>
+                  <li>You can upload different resumes for different opportunities</li>
+                  <li>Each opportunity keeps exactly one resume; uploading again replaces it</li>
+                  <li>Use the buttons on each listing to download, replace, or delete that resume</li>
                 </ul>
               </div>
             </div>

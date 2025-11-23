@@ -5,21 +5,22 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { opportunities } from '@/data/opportunities';
 import { OpportunityType } from '@/types/opportunity';
-import { useResumeUpload } from '@/hooks/useResumeUpload';
+import { useOpportunityResumes } from '@/hooks/useOpportunityResumes';
 import { useApplications } from '@/hooks/useApplications';
 import ResumeUploadModal from '@/components/ResumeUploadModal';
 
 export default function OpportunitiesPage() {
   const { session, isAdmin, isLoading } = useAuth();
   const {
-    resume,
+    resumesByOpportunity,
     isLoading: isResumeLoading,
     isUploading,
     error: resumeError,
     uploadResume,
     deleteResume,
     downloadResume,
-  } = useResumeUpload();
+    getResumeForOpportunity,
+  } = useOpportunityResumes();
   
   const {
     applications,
@@ -29,7 +30,7 @@ export default function OpportunitiesPage() {
     withdrawApplication,
   } = useApplications();
   
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [resumeModalOpportunityId, setResumeModalOpportunityId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [withdrawConfirmId, setWithdrawConfirmId] = useState<string | null>(null);
   const [applyingToId, setApplyingToId] = useState<string | null>(null);
@@ -51,16 +52,18 @@ export default function OpportunitiesPage() {
   };
 
   const handleUploadResume = async (file: File): Promise<boolean> => {
-    const success = await uploadResume(file);
+    if (!resumeModalOpportunityId) return false;
+    const success = await uploadResume(resumeModalOpportunityId, file);
     if (success) {
-      // Success handled by modal
+      setResumeModalOpportunityId(null);
       return true;
     }
     return false;
   };
 
   const handleDeleteResume = async () => {
-    const success = await deleteResume();
+    if (!deleteConfirmId) return;
+    const success = await deleteResume(deleteConfirmId);
     if (success) {
       setDeleteConfirmId(null);
     }
@@ -73,14 +76,16 @@ export default function OpportunitiesPage() {
   };
 
   const handleApply = async (opportunityId: string) => {
-    if (!resume) {
-      alert('Please upload your resume before applying to opportunities.');
-      setIsUploadModalOpen(true);
+    const opportunityResume = getResumeForOpportunity(opportunityId);
+
+    if (!opportunityResume) {
+      alert('Please upload a resume for this opportunity before applying.');
+      setResumeModalOpportunityId(opportunityId);
       return;
     }
 
     setApplyingToId(opportunityId);
-    const success = await applyToOpportunity(opportunityId, resume.id);
+    const success = await applyToOpportunity(opportunityId, opportunityResume.id);
     setApplyingToId(null);
 
     if (success) {
@@ -274,6 +279,13 @@ export default function OpportunitiesPage() {
   }
 
   const userEmail = session.user.email;
+  const opportunityForUpload = resumeModalOpportunityId
+    ? opportunities.find((opp) => opp.id === resumeModalOpportunityId)
+    : null;
+  const opportunityPendingDeletion = deleteConfirmId
+    ? opportunities.find((opp) => opp.id === deleteConfirmId)
+    : null;
+  const resumePendingDeletion = deleteConfirmId ? resumesByOpportunity[deleteConfirmId] : null;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
@@ -299,17 +311,20 @@ export default function OpportunitiesPage() {
             </div>
           </div>
 
-          {/* Resume Status Card */}
+          {/* Opportunity Resume Overview */}
           <div className="mt-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <svg className="w-5 h-5 text-blue-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <h3 className="text-lg font-semibold text-blue-primary">Your Resume</h3>
+                  <h3 className="text-lg font-semibold text-blue-primary">Opportunity Resumes</h3>
                 </div>
-                
+                <p className="text-sm text-gray-700 mb-4">
+                  Attach a tailored resume to each opportunity. Use the buttons on every listing to upload, replace, or delete that specific file.
+                </p>
+
                 {isResumeLoading ? (
                   <div className="flex items-center gap-2 text-gray-600">
                     <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -318,26 +333,59 @@ export default function OpportunitiesPage() {
                     </svg>
                     <span className="text-sm">Loading resume status...</span>
                   </div>
-                ) : resume ? (
+                ) : Object.keys(resumesByOpportunity).length > 0 ? (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Resume Uploaded
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-700">
-                      <p><strong>File:</strong> {resume.file_name}</p>
-                      <p><strong>Size:</strong> {formatFileSize(resume.file_size)}</p>
-                      <p><strong>Uploaded:</strong> {new Date(resume.uploaded_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
+                    {Object.entries(resumesByOpportunity).map(([opportunityId, opportunityResume]) => {
+                      const associatedOpportunity = opportunities.find((opp) => opp.id === opportunityId);
+                      return (
+                        <div
+                          key={opportunityId}
+                          className="bg-white/70 border border-gray-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {associatedOpportunity ? associatedOpportunity.title : 'Opportunity removed'}
+                            </p>
+                            <p className="text-sm text-gray-700">{opportunityResume.file_name}</p>
+                            <p className="text-xs text-gray-500">
+                              Uploaded{' '}
+                              {new Date(opportunityResume.uploaded_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}{' '}
+                              • {formatFileSize(opportunityResume.file_size)}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => downloadResume(opportunityId)}
+                              className="px-3 py-1.5 bg-white border border-blue-primary text-blue-primary text-xs font-medium rounded-md hover:bg-blue-50 transition-colors"
+                            >
+                              Download
+                            </button>
+                            <button
+                              onClick={() => setResumeModalOpportunityId(opportunityId)}
+                              className="px-3 py-1.5 bg-blue-primary text-white text-xs font-medium rounded-md hover:bg-blue-800 transition-colors"
+                            >
+                              Replace
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(opportunityId)}
+                              className="px-3 py-1.5 bg-white border border-red-500 text-red-500 text-xs font-medium rounded-md hover:bg-red-50 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div>
-                    <p className="text-gray-700 text-sm mb-2">
-                      No resume uploaded yet. Upload your resume to easily apply for opportunities.
+                  <div className="bg-white/70 border border-dashed border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-700">
+                      No resumes attached yet. Open any opportunity below and use the “Attach Resume” button to upload a version
+                      crafted for that role.
                     </p>
                   </div>
                 )}
@@ -346,44 +394,6 @@ export default function OpportunitiesPage() {
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                     <p className="text-sm text-red-800">{resumeError}</p>
                   </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2 ml-4">
-                {resume ? (
-                  <>
-                    <button
-                      onClick={downloadResume}
-                      className="px-4 py-2 bg-white border border-blue-primary text-blue-primary font-medium rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download
-                    </button>
-                    <button
-                      onClick={() => setIsUploadModalOpen(true)}
-                      className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors text-sm"
-                    >
-                      Replace Resume
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirmId('resume')}
-                      className="px-4 py-2 bg-white border border-red-500 text-red-500 font-medium rounded-md hover:bg-red-50 transition-colors text-sm"
-                    >
-                      Delete Resume
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setIsUploadModalOpen(true)}
-                    className="px-6 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    Upload Resume
-                  </button>
                 )}
               </div>
             </div>
@@ -406,6 +416,17 @@ export default function OpportunitiesPage() {
             {opportunities.map((opportunity) => {
               const applied = hasApplied(opportunity.id);
               const applying = applyingToId === opportunity.id;
+              const opportunityResume = resumesByOpportunity[opportunity.id];
+              const canApply = Boolean(opportunityResume);
+              const resumeUploadedAtLabel = opportunityResume
+                ? new Date(opportunityResume.uploaded_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : null;
               
               return (
                 <div
@@ -491,6 +512,92 @@ export default function OpportunitiesPage() {
                         ))}
                       </div>
                     )}
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Resume for this opportunity</p>
+                          {opportunityResume ? (
+                            <>
+                              <p className="font-medium text-gray-900">{opportunityResume.file_name}</p>
+                              <p className="text-xs text-gray-500">
+                                Uploaded {resumeUploadedAtLabel} • {formatFileSize(opportunityResume.file_size)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-700">
+                              No resume attached yet. Upload a tailored version before applying.
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${
+                            opportunityResume
+                              ? 'bg-green-100 text-green-800 border-green-200'
+                              : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                          }`}
+                        >
+                          {opportunityResume ? (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Attached
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Required
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {opportunityResume ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                downloadResume(opportunity.id);
+                              }}
+                              className="px-3 py-1.5 bg-white border border-blue-primary text-blue-primary text-xs font-medium rounded-md hover:bg-blue-50 transition-colors"
+                            >
+                              Download
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setResumeModalOpportunityId(opportunity.id);
+                              }}
+                              className="px-3 py-1.5 bg-blue-primary text-white text-xs font-medium rounded-md hover:bg-blue-800 transition-colors"
+                            >
+                              Replace
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirmId(opportunity.id);
+                              }}
+                              className="px-3 py-1.5 bg-white border border-red-500 text-red-500 text-xs font-medium rounded-md hover:bg-red-50 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setResumeModalOpportunityId(opportunity.id);
+                            }}
+                            className="px-4 py-2 bg-blue-primary text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors"
+                          >
+                            Attach Resume
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2 md:min-w-[200px]">
@@ -513,31 +620,38 @@ export default function OpportunitiesPage() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleApply(opportunity.id);
-                        }}
-                        disabled={applying}
-                        className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200 text-center disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {applying ? (
-                          <>
-                            <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Applying...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Apply Now
-                          </>
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApply(opportunity.id);
+                          }}
+                          disabled={applying || !canApply}
+                          className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200 text-center disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {applying ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Applying...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              {canApply ? 'Apply Now' : 'Attach Resume to Apply'}
+                            </>
+                          )}
+                        </button>
+                        {!canApply && (
+                          <p className="text-xs text-orange-600 text-center">
+                            Upload a resume for this opportunity to unlock the Apply button.
+                          </p>
                         )}
-                      </button>
+                      </>
                     )}
                     {opportunity.applicationUrl && (
                       <a
@@ -596,10 +710,11 @@ export default function OpportunitiesPage() {
 
         {/* Resume Upload Modal */}
         <ResumeUploadModal
-          isOpen={isUploadModalOpen}
-          onClose={() => setIsUploadModalOpen(false)}
+          isOpen={Boolean(resumeModalOpportunityId)}
+          onClose={() => setResumeModalOpportunityId(null)}
           onUpload={handleUploadResume}
           isUploading={isUploading}
+          opportunityTitle={opportunityForUpload?.title}
         />
 
         {/* Delete Confirmation Modal */}
@@ -614,11 +729,18 @@ export default function OpportunitiesPage() {
                 </div>
                 <div className="ml-3 flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Delete Resume?
+                    Delete Resume for {opportunityPendingDeletion ? opportunityPendingDeletion.title : 'this opportunity'}?
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Are you sure you want to delete your resume? This action cannot be undone. You will need to upload a new resume to apply for opportunities.
+                    Are you sure you want to delete{' '}
+                    {opportunityPendingDeletion ? `the resume attached to ${opportunityPendingDeletion.title}` : 'this resume'}
+                    ? You will need to upload a new version before applying again.
                   </p>
+                  {resumePendingDeletion?.file_name && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Current file: <span className="font-medium">{resumePendingDeletion.file_name}</span>
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">

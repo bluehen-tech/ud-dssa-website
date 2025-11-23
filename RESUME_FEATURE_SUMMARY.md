@@ -8,7 +8,7 @@ I've successfully implemented a comprehensive resume upload feature for your UD-
 
 ### New Files Created:
 1. **`supabase/RESUME_UPLOADS_SETUP.sql`** - Database schema and RLS policies
-2. **`src/hooks/useResumeUpload.ts`** - React hook for resume management
+2. **`src/hooks/useOpportunityResumes.ts`** - React hook for opportunity-specific resume management
 3. **`src/components/ResumeUploadModal.tsx`** - Beautiful drag-and-drop upload modal
 4. **`docs/RESUME_UPLOADS_SETUP.md`** - Detailed setup and troubleshooting guide
 5. **`RESUME_UPLOAD_QUICKSTART.md`** - Quick start guide for you
@@ -18,11 +18,11 @@ I've successfully implemented a comprehensive resume upload feature for your UD-
 2. **`next.config.js`** - Temporarily disabled TypeScript build errors (see note below)
 
 ### Features Implemented:
-- ✅ Upload resume (PDF, DOC, DOCX, max 5MB)
+- ✅ Upload resumes (PDF, DOC, DOCX, max 5MB) per opportunity
 - ✅ Beautiful drag-and-drop interface
-- ✅ View uploaded resume status on opportunities page
-- ✅ Download your uploaded resume
-- ✅ Replace existing resume
+- ✅ View resume status for every opportunity
+- ✅ Download, replace, or delete any attached resume
+- ✅ Maintain different resumes for different opportunities
 - ✅ Delete resume with confirmation modal
 - ✅ Secure file storage with Row Level Security (RLS)
 - ✅ File validation (type and size)
@@ -85,27 +85,27 @@ See `RESUME_UPLOAD_QUICKSTART.md` for detailed instructions!
 1. Run `npm run dev`
 2. Sign in with your @udel.edu email
 3. Go to the Opportunities page
-4. Test uploading, downloading, and deleting a resume
+4. Test attaching, downloading, and deleting a resume for a specific opportunity
 
 ## How It Works
 
 ### Security Architecture
-- **File Storage:** Files are stored as `resumes/{user_id}/resume_{timestamp}.{ext}`
-- **Database Tracking:** Metadata stored in `resume_uploads` table
+- **File Storage:** Files are stored as `resumes/{opportunity_id}/{user_id}/{username}-{opportunity}-{timestamp}.{ext}`
+- **Database Tracking:** Metadata stored in `opportunity_resumes` table
 - **Access Control:** Row Level Security ensures users can only access their own files
 - **Authentication:** Only authenticated @udel.edu users can upload
 
 ### User Experience
-1. Users see a prominent "Your Resume" card at the top of the Opportunities page
-2. If no resume is uploaded, they see an "Upload Resume" button
-3. Clicking opens a beautiful drag-and-drop modal
-4. After uploading, they can see their resume details and manage it
-5. One resume per user (uploading a new one replaces the old one)
+1. Users see an "Opportunity Resumes" overview card at the top of the Opportunities page
+2. Each opportunity card shows whether a resume is attached
+3. Clicking "Attach Resume" opens the drag-and-drop modal scoped to that opportunity
+4. After uploading, they can download, replace, or delete the resume directly from that listing
+5. Each opportunity stores its own resume (uploading again replaces just that file)
 
 ## Important Notes
 
 ### About TypeScript Errors
-I've temporarily disabled TypeScript build errors in `next.config.js` because Supabase doesn't know about the `resume_uploads` table until you create it. This is normal and expected.
+I've temporarily disabled TypeScript build errors in `next.config.js` because Supabase doesn't know about the `opportunity_resumes` table until you create it. This is normal and expected.
 
 **What this means:**
 - ✅ Development server (`npm run dev`) works perfectly
@@ -115,12 +115,12 @@ I've temporarily disabled TypeScript build errors in `next.config.js` because Su
 ### File Size and Type Limits
 - **Allowed types:** PDF, DOC, DOCX
 - **Max size:** 5MB
-- **To change limits:** Edit `MAX_FILE_SIZE` in `src/hooks/useResumeUpload.ts`
+- **To change limits:** Edit `MAX_FILE_SIZE` in `src/hooks/useOpportunityResumes.ts`
 
-### One Resume Per User
-- Each user can only have one resume uploaded at a time
-- Uploading a new resume automatically replaces the old one
-- This is enforced by a `UNIQUE(user_id)` constraint in the database
+### One Resume Per Opportunity
+- Each user can attach one resume per opportunity
+- Uploading again for the same opportunity replaces just that file
+- Enforced by a `UNIQUE(user_id, opportunity_id)` constraint in the database
 
 ## Troubleshooting
 
@@ -130,7 +130,7 @@ I've temporarily disabled TypeScript build errors in `next.config.js` because Su
 - Check browser console for specific errors
 
 ### "Failed to fetch resume"
-- Make sure you ran the SQL script to create the `resume_uploads` table
+- Make sure you ran the SQL script to create the `opportunity_resumes` table
 - Verify database RLS policies are enabled
 - Check that user is signed in
 
@@ -142,7 +142,7 @@ I've temporarily disabled TypeScript build errors in `next.config.js` because Su
 ## Next Steps (Optional Enhancements)
 
 If you want to extend this feature in the future:
-- Add support for multiple resume versions
+- Allow multiple resume versions per opportunity
 - Allow LinkedIn profile or portfolio URLs
 - Parse resumes to extract skills
 - Admin dashboard to view applicant resumes (with consent)

@@ -5,11 +5,11 @@ This guide walks you through setting up the resume upload feature for the UD-DSS
 ## Overview
 
 The resume upload feature allows authenticated users to:
-- Upload their resume (PDF, DOC, or DOCX, max 5MB)
-- View their uploaded resume status on the opportunities page
-- Download their uploaded resume
-- Replace their uploaded resume
-- Delete their uploaded resume
+- Upload resumes (PDF, DOC, or DOCX, max 5MB) for specific opportunities
+- View resume status for each opportunity on the opportunities page
+- Download any uploaded resume
+- Replace a resume for just one opportunity without affecting others
+- Delete an uploaded resume
 
 All resumes are stored securely in Supabase Storage with Row Level Security (RLS) policies ensuring users can only access their own files.
 
@@ -31,7 +31,7 @@ All resumes are stored securely in Supabase Storage with Row Level Security (RLS
 6. Click **Run**
 
 This will:
-- Create the `resume_uploads` table
+- Create the `opportunity_resumes` table
 - Enable Row Level Security (RLS)
 - Create RLS policies so users can only access their own resume records
 - Create an index for faster queries
@@ -60,7 +60,7 @@ Create the following 4 policies:
 - **Target roles**: authenticated
 - **USING expression**:
 ```sql
-(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[1])
+(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[2])
 ```
 
 #### Policy 2: INSERT (Upload)
@@ -69,7 +69,7 @@ Create the following 4 policies:
 - **Target roles**: authenticated
 - **WITH CHECK expression**:
 ```sql
-(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[1])
+(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[2])
 ```
 
 #### Policy 3: DELETE
@@ -78,7 +78,7 @@ Create the following 4 policies:
 - **Target roles**: authenticated
 - **USING expression**:
 ```sql
-(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[1])
+(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[2])
 ```
 
 #### Policy 4: UPDATE
@@ -87,7 +87,7 @@ Create the following 4 policies:
 - **Target roles**: authenticated
 - **USING expression**:
 ```sql
-(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[1])
+(bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[2])
 ```
 
 ### Step 4: Verify Setup
@@ -96,7 +96,7 @@ To verify everything is working:
 
 1. **Test the database table**:
    - Go to **Table Editor** in Supabase Dashboard
-   - You should see the `resume_uploads` table
+   - You should see the `opportunity_resumes` table
    - Check that RLS is enabled (shield icon should be visible)
 
 2. **Test the storage bucket**:
@@ -119,37 +119,41 @@ To verify everything is working:
 Files are stored in Supabase Storage with the following path structure:
 ```
 resumes/
-  └── {user_id}/
-      └── resume_{timestamp}.{ext}
+  └── {opportunity_id}/
+      └── {user_id}/
+          └── {username}-{opportunity}-{timestamp}.{ext}
 ```
 
 For example:
 ```
 resumes/
-  └── 37ed6bef-51fa-486e-82c5-78ac8b67cff0/
-      └── resume_1700000000000.pdf
+  └── data-engineer-intern/
+      └── 37ed6bef-51fa-486e-82c5-78ac8b67cff0/
+          └── jdoe-data-engineer-intern-20231123104500.pdf
 ```
 
 This structure ensures:
-- Each user has their own folder
+- Each opportunity has its own folder for easy bulk downloads
+- Each user keeps a private subfolder enforced by storage RLS
+- File names include the student's UD username, making them easy to identify
 - Files are uniquely named with timestamps
-- RLS policies can easily check folder ownership
 
 ### Database Schema
 
-The `resume_uploads` table tracks metadata about uploaded resumes:
+The `opportunity_resumes` table tracks metadata about uploaded resumes:
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | UUID | Primary key (auto-generated) |
 | `user_id` | UUID | References auth.users(id), CASCADE delete |
+| `opportunity_id` | TEXT | ID of the opportunity the resume belongs to |
 | `file_name` | TEXT | Original filename (e.g., "John_Doe_Resume.pdf") |
 | `file_path` | TEXT | Storage path (e.g., "user-id/resume_123.pdf") |
 | `file_size` | INTEGER | File size in bytes |
 | `mime_type` | TEXT | MIME type (e.g., "application/pdf") |
 | `uploaded_at` | TIMESTAMP | When the file was uploaded |
 
-**Unique Constraint**: Each user can only have one resume uploaded at a time (`UNIQUE(user_id)`).
+**Unique Constraint**: Each user can only have one resume per opportunity (`UNIQUE(user_id, opportunity_id)`).
 
 ### Security Features
 
@@ -195,7 +199,7 @@ The `resume_uploads` table tracks metadata about uploaded resumes:
 3. User not authenticated
 
 **Solutions**:
-- Verify the `resume_uploads` table exists
+- Verify the `opportunity_resumes` table exists
 - Check that database RLS policies are enabled
 - Ensure user is signed in with valid session
 
@@ -230,7 +234,7 @@ Current limits:
 - **Supabase Pro tier**: 100GB total storage
 
 To change the file size limit:
-1. Update `MAX_FILE_SIZE` in `src/hooks/useResumeUpload.ts`
+1. Update `MAX_FILE_SIZE` in `src/hooks/useOpportunityResumes.ts`
 2. Update the validation message in `src/components/ResumeUploadModal.tsx`
 
 ## Future Enhancements
@@ -241,7 +245,7 @@ Possible improvements for the future:
 - Admin dashboard to view user resumes (with explicit consent)
 - Email notifications when resume is uploaded
 - Automatic resume expiration (e.g., after 1 year)
-- Multiple resume versions (e.g., different versions for different opportunities)
+- Multiple resume versions per opportunity (version history)
 
 ## Support
 

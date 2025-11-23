@@ -94,7 +94,7 @@ CREATE TABLE applications (
   id UUID PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id),
   opportunity_id TEXT NOT NULL,
-  resume_upload_id UUID REFERENCES resume_uploads(id),
+  resume_upload_id UUID REFERENCES opportunity_resumes(id),
   applied_at TIMESTAMP DEFAULT NOW(),
   status TEXT DEFAULT 'pending',
   notes TEXT,
@@ -127,7 +127,7 @@ SELECT
   r.uploaded_at as resume_uploaded_at
 FROM applications a
 LEFT JOIN profiles p ON a.user_id = p.id
-LEFT JOIN resume_uploads r ON a.resume_upload_id = r.id;
+LEFT JOIN opportunity_resumes r ON a.resume_upload_id = r.id;
 ```
 
 This makes it easy to see all application data in one query!
@@ -156,8 +156,8 @@ This makes it easy to see all application data in one query!
 ### Test as Regular User
 
 1. Sign in with @udel.edu email
-2. Upload a resume on the Opportunities page
-3. Click "Apply Now" on an opportunity
+2. Attach a resume to the opportunity you're interested in
+3. Click "Apply Now" on that opportunity
 4. See the "Applied" badge appear
 5. Try to apply again (should be prevented)
 6. Click "Withdraw Application" to test withdrawal
