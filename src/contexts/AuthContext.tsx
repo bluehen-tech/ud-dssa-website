@@ -121,26 +121,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize session
   const initializeSession = async () => {
-    if (initializingRef.current) return;
+    if (initializingRef.current) {
+      console.log('⏭️ Session initialization already in progress, skipping...');
+      return;
+    }
     initializingRef.current = true;
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔄 AUTH CONTEXT: INITIALIZING SESSION');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('⏰ Timestamp:', new Date().toISOString());
 
     // ALWAYS resolve loading state quickly
     const loadingTimeout = setTimeout(() => {
       if (isMountedRef.current) {
+        console.log('⏱️ Loading timeout reached (2s), setting isLoading to false');
         setIsLoading(false);
       }
     }, 2000); // Maximum 2 seconds before showing content
 
     try {
       const supabase = createClient();
+      console.log('✅ Supabase client created');
+      console.log('📤 Calling supabase.auth.getSession()...');
       
+      const sessionStartTime = Date.now();
       const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+      const sessionDuration = Date.now() - sessionStartTime;
 
       // Clear the loading timeout since we got a response
       clearTimeout(loadingTimeout);
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📥 getSession() RESPONSE');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('⏱️ Duration:', sessionDuration, 'ms');
+      console.log('📦 Session exists:', !!currentSession);
+      console.log('❌ Error:', error || 'None');
+
       if (error) {
-        console.error('Error getting session:', error);
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('❌ ERROR GETTING SESSION');
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('🚨 Error:', error);
+        console.error('🚨 Error message:', error.message);
+        console.error('🚨 Full error:', JSON.stringify(error, null, 2));
+        
         if (isMountedRef.current) {
           setSession(null);
           setIsAdmin(false);
@@ -150,13 +176,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (currentSession && isSessionValid(currentSession)) {
+        console.log('✅ Valid session found');
+        console.log('👤 User email:', currentSession.user.email);
+        console.log('🆔 User ID:', currentSession.user.id);
+        console.log('⏰ Session expires at:', new Date(currentSession.expires_at * 1000).toISOString());
+        
         // Valid session
         setSessionStartTime();
+        console.log('⏰ Session start time set');
         
         // Verify email domain
         const userEmail = currentSession.user.email;
         if (!userEmail || !userEmail.endsWith('@udel.edu')) {
-          console.warn('Invalid email domain:', userEmail);
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.error('❌ INVALID EMAIL DOMAIN');
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.error('📧 Email:', userEmail);
+          console.error('🚨 Expected: @udel.edu');
+          console.error('🔄 Signing out...');
+          
           await supabase.auth.signOut().catch(console.error);
           if (isMountedRef.current) {
             setSession(null);
@@ -164,27 +202,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearSessionStartTime();
           }
         } else {
+          console.log('✅ Email domain validation passed');
+          
           // Check cache first for immediate admin status
           const cachedAdmin = getCachedAdminStatus(currentSession.user.id);
+          console.log('💾 Cached admin status:', cachedAdmin !== null ? (cachedAdmin ? 'Admin' : 'Member') : 'Not cached');
           
           // Set session and cached admin status immediately
           if (isMountedRef.current) {
             setSession(currentSession);
             if (cachedAdmin !== null) {
               setIsAdmin(cachedAdmin);
+              console.log('✅ Set admin status from cache:', cachedAdmin ? 'Admin' : 'Member');
             }
           }
           
           // Fetch fresh admin status in background (will use cache if available)
+          console.log('📤 Fetching fresh admin status...');
           fetchAdminStatus(currentSession.user.id, true).then(adminStatus => {
+            console.log('✅ Admin status fetched:', adminStatus ? 'Admin' : 'Member');
             if (isMountedRef.current) {
               setIsAdmin(adminStatus);
             }
-          }).catch(console.error);
+          }).catch(error => {
+            console.error('❌ Error fetching admin status:', error);
+          });
         }
       } else {
-        // Invalid or no session
+        console.log('ℹ️ No valid session found');
         if (currentSession) {
+          console.log('⚠️ Session exists but is invalid (expired?)');
+          console.log('⏰ Session expires at:', new Date(currentSession.expires_at * 1000).toISOString());
+          console.log('🔄 Signing out...');
           await supabase.auth.signOut().catch(console.error);
         }
         if (isMountedRef.current) {
@@ -194,7 +243,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Error initializing session:', error);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ EXCEPTION DURING SESSION INITIALIZATION');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('🚨 Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('🚨 Error message:', error instanceof Error ? error.message : String(error));
+      console.error('🚨 Error stack:', error instanceof Error ? error.stack : 'N/A');
+      console.error('🚨 Full error:', error);
+      
       if (isMountedRef.current) {
         setSession(null);
         setIsAdmin(false);
@@ -202,8 +258,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
+        console.log('✅ Session initialization complete, isLoading set to false');
       }
       initializingRef.current = false;
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
   };
 
@@ -296,7 +354,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log('Auth state change:', event);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔔 AUTH CONTEXT: AUTH STATE CHANGE');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('⏰ Timestamp:', new Date().toISOString());
+      console.log('📅 Event:', event);
+      console.log('👤 Session user:', currentSession?.user?.email || 'N/A');
+      console.log('🆔 Session user ID:', currentSession?.user?.id || 'N/A');
+      console.log('⏰ Session expires at:', currentSession?.expires_at ? new Date(currentSession.expires_at * 1000).toISOString() : 'N/A');
+      console.log('📦 Session exists:', !!currentSession);
 
       if (event === 'SIGNED_OUT') {
         if (isMountedRef.current) {

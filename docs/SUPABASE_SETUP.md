@@ -1,5 +1,7 @@
 # Supabase Configuration for UD-DSSA Website
 
+> **⚠️ This file is deprecated. See [docs/SUPABASE.md](./SUPABASE.md) for the consolidated documentation.**
+
 ## Authentication Setup
 
 ### Redirect URLs Configuration

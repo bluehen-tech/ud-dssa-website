@@ -7,39 +7,36 @@ This directory contains all documentation for the UD-DSSA website.
 New to the project? Start here:
 
 1. **[README.md](../README.md)** - Project overview and setup instructions
-2. **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - Configure Supabase for authentication and database
-3. **[AUTH_IMPLEMENTATION_SUMMARY.md](./AUTH_IMPLEMENTATION_SUMMARY.md)** - How authentication works
+2. **[SUPABASE.md](./SUPABASE.md)** - **⭐ Single source of truth for all Supabase authentication** (start here!)
+3. **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - (Deprecated - see SUPABASE.md)
+4. **[AUTH_IMPLEMENTATION_SUMMARY.md](./AUTH_IMPLEMENTATION_SUMMARY.md)** - (Deprecated - see SUPABASE.md)
+5. **[TROUBLESHOOTING_AUTH.md](./TROUBLESHOOTING_AUTH.md)** - (Deprecated - see SUPABASE.md)
 
 ## Documentation Files
 
-### Setup & Configuration
+### ⭐ Main Documentation
 
-- **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
-  - Supabase project configuration
-  - Redirect URLs and email templates
+- **[SUPABASE.md](./SUPABASE.md)** - **Single Source of Truth**
+  - Complete Supabase authentication guide
+  - Based on official Supabase documentation
+  - Configuration, implementation, troubleshooting
   - Database setup with RLS policies
-  - Environment variables
-  - **Use this for initial setup**
+  - Magic link authentication flow
+  - **Use this for everything Supabase-related**
 
-### Authentication
+### Deprecated Documentation (for reference only)
 
-- **[AUTH_IMPLEMENTATION_SUMMARY.md](./AUTH_IMPLEMENTATION_SUMMARY.md)**
-  - Complete authentication implementation guide
-  - Technical architecture overview
-  - Database schema and RLS policies
-  - Console logs reference
-  - Future improvements
-  - **Use this to understand how auth works**
+- **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - (Deprecated - see SUPABASE.md)
+  - Old setup guide
+  - Superseded by SUPABASE.md
 
-### Troubleshooting
+- **[AUTH_IMPLEMENTATION_SUMMARY.md](./AUTH_IMPLEMENTATION_SUMMARY.md)** - (Deprecated - see SUPABASE.md)
+  - Old implementation summary
+  - Superseded by SUPABASE.md
 
-- **[TROUBLESHOOTING_AUTH.md](./TROUBLESHOOTING_AUTH.md)**
-  - Common authentication issues and fixes
-  - RLS policy problems
-  - Magic link behavior explanation
-  - Sign out issues
-  - Build cache errors
-  - **Use this when something isn't working**
+- **[TROUBLESHOOTING_AUTH.md](./TROUBLESHOOTING_AUTH.md)** - (Deprecated - see SUPABASE.md)
+  - Old troubleshooting guide
+  - Superseded by SUPABASE.md
 
 ## SQL Scripts
 
@@ -126,12 +123,12 @@ npm run dev
 
 ## Getting Help
 
-1. **Check the troubleshooting guide first**: [TROUBLESHOOTING_AUTH.md](./TROUBLESHOOTING_AUTH.md)
+1. **Check the main documentation first**: [SUPABASE.md](./SUPABASE.md) - includes troubleshooting section
 2. **Look at console logs** for error messages
 3. **Check Supabase Dashboard**:
    - Authentication → Logs
    - Table Editor → profiles
-4. **Review the implementation summary**: [AUTH_IMPLEMENTATION_SUMMARY.md](./AUTH_IMPLEMENTATION_SUMMARY.md)
+4. **Review the troubleshooting section** in [SUPABASE.md](./SUPABASE.md)
 
 ## Contributing
 

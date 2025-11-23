@@ -1,10 +1,9 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase-middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-  const supabase = createMiddlewareClient({ req: request, res: response });
+  const { supabase, response } = createClient(request);
 
   // Protected routes (only /officers requires authentication)
   const protectedPaths = ['/officers'];

@@ -1,12 +1,38 @@
 "use client";
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { opportunities } from '@/data/opportunities';
 import { OpportunityType } from '@/types/opportunity';
+import { useResumeUpload } from '@/hooks/useResumeUpload';
+import { useApplications } from '@/hooks/useApplications';
+import ResumeUploadModal from '@/components/ResumeUploadModal';
 
 export default function OpportunitiesPage() {
   const { session, isAdmin, isLoading } = useAuth();
+  const {
+    resume,
+    isLoading: isResumeLoading,
+    isUploading,
+    error: resumeError,
+    uploadResume,
+    deleteResume,
+    downloadResume,
+  } = useResumeUpload();
+  
+  const {
+    applications,
+    isLoading: isApplicationsLoading,
+    hasApplied,
+    applyToOpportunity,
+    withdrawApplication,
+  } = useApplications();
+  
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [withdrawConfirmId, setWithdrawConfirmId] = useState<string | null>(null);
+  const [applyingToId, setApplyingToId] = useState<string | null>(null);
 
   const getTypeColor = (type: OpportunityType): string => {
     const colors: Record<OpportunityType, string> = {
@@ -22,6 +48,53 @@ export default function OpportunitiesPage() {
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const handleUploadResume = async (file: File): Promise<boolean> => {
+    const success = await uploadResume(file);
+    if (success) {
+      // Success handled by modal
+      return true;
+    }
+    return false;
+  };
+
+  const handleDeleteResume = async () => {
+    const success = await deleteResume();
+    if (success) {
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleApply = async (opportunityId: string) => {
+    if (!resume) {
+      alert('Please upload your resume before applying to opportunities.');
+      setIsUploadModalOpen(true);
+      return;
+    }
+
+    setApplyingToId(opportunityId);
+    const success = await applyToOpportunity(opportunityId, resume.id);
+    setApplyingToId(null);
+
+    if (success) {
+      // Success - application tracked
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawConfirmId) return;
+    
+    const success = await withdrawApplication(withdrawConfirmId);
+    if (success) {
+      setWithdrawConfirmId(null);
+    }
   };
 
   // Show loading state
@@ -225,6 +298,96 @@ export default function OpportunitiesPage() {
               </p>
             </div>
           </div>
+
+          {/* Resume Status Card */}
+          <div className="mt-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5 text-blue-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-blue-primary">Your Resume</h3>
+                </div>
+                
+                {isResumeLoading ? (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-sm">Loading resume status...</span>
+                  </div>
+                ) : resume ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Resume Uploaded
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      <p><strong>File:</strong> {resume.file_name}</p>
+                      <p><strong>Size:</strong> {formatFileSize(resume.file_size)}</p>
+                      <p><strong>Uploaded:</strong> {new Date(resume.uploaded_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-700 text-sm mb-2">
+                      No resume uploaded yet. Upload your resume to easily apply for opportunities.
+                    </p>
+                  </div>
+                )}
+
+                {resumeError && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-800">{resumeError}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 ml-4">
+                {resume ? (
+                  <>
+                    <button
+                      onClick={downloadResume}
+                      className="px-4 py-2 bg-white border border-blue-primary text-blue-primary font-medium rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </button>
+                    <button
+                      onClick={() => setIsUploadModalOpen(true)}
+                      className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors text-sm"
+                    >
+                      Replace Resume
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId('resume')}
+                      className="px-4 py-2 bg-white border border-red-500 text-red-500 font-medium rounded-md hover:bg-red-50 transition-colors text-sm"
+                    >
+                      Delete Resume
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsUploadModalOpen(true)}
+                    className="px-6 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors text-sm flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Resume
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Opportunities List */}
@@ -240,31 +403,34 @@ export default function OpportunitiesPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {opportunities.map((opportunity) => (
-              <Link
-                key={opportunity.id}
-                href={`/opportunities/${opportunity.id}`}
-                className="block bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:border-blue-primary hover:border-2 transition-all duration-300"
-              >
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div>
-                        <h2 className="text-2xl font-bold text-blue-primary mb-1">
-                          {opportunity.title}
-                        </h2>
-                        <p className="text-lg text-gray-700 font-medium">
-                          {opportunity.organization}
-                        </p>
+            {opportunities.map((opportunity) => {
+              const applied = hasApplied(opportunity.id);
+              const applying = applyingToId === opportunity.id;
+              
+              return (
+                <div
+                  key={opportunity.id}
+                  className="block bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-blue-primary"
+                >
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div>
+                          <h2 className="text-2xl font-bold text-blue-primary mb-1">
+                            {opportunity.title}
+                          </h2>
+                          <p className="text-lg text-gray-700 font-medium">
+                            {opportunity.organization}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(
+                            opportunity.type
+                          )}`}
+                        >
+                          {opportunity.type.charAt(0).toUpperCase() + opportunity.type.slice(1)}
+                        </span>
                       </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(
-                          opportunity.type
-                        )}`}
-                      >
-                        {opportunity.type.charAt(0).toUpperCase() + opportunity.type.slice(1)}
-                      </span>
-                    </div>
 
                     <p className="text-gray-700 mb-4">{opportunity.description}</p>
 
@@ -328,28 +494,83 @@ export default function OpportunitiesPage() {
                   </div>
 
                   <div className="flex flex-col gap-2 md:min-w-[200px]">
+                    {applied ? (
+                      <>
+                        <div className="px-4 py-2 bg-green-50 border-2 border-green-500 text-green-700 font-medium rounded-md text-center flex items-center justify-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Applied
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWithdrawConfirmId(opportunity.id);
+                          }}
+                          className="px-4 py-2 bg-white border border-red-500 text-red-500 font-medium rounded-md hover:bg-red-50 transition-colors text-sm"
+                        >
+                          Withdraw Application
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApply(opportunity.id);
+                        }}
+                        disabled={applying}
+                        className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200 text-center disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {applying ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Applying...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Apply Now
+                          </>
+                        )}
+                      </button>
+                    )}
                     {opportunity.applicationUrl && (
                       <a
                         href={opportunity.applicationUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors duration-200 text-center text-sm"
                       >
-                        Apply Now
+                        External Link
                       </a>
                     )}
                     {opportunity.contactEmail && (
                       <a
                         href={`mailto:${opportunity.contactEmail}`}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-colors duration-200 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors duration-200 text-center text-sm"
                       >
                         Contact
                       </a>
                     )}
+                    <Link
+                      href={`/opportunities/${opportunity.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-4 py-2 bg-white border border-blue-primary text-blue-primary font-medium rounded-md hover:bg-blue-50 transition-colors duration-200 text-center text-sm"
+                    >
+                      View Details
+                    </Link>
                   </div>
                 </div>
-              </Link>
-            ))}
+              </div>
+            );
+            })}
           </div>
         )}
 
@@ -372,6 +593,88 @@ export default function OpportunitiesPage() {
             ← Back to Home
           </Link>
         </div>
+
+        {/* Resume Upload Modal */}
+        <ResumeUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onUpload={handleUploadResume}
+          isUploading={isUploading}
+        />
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-start mb-4">
+                <div className="flex-shrink-0">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Delete Resume?
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Are you sure you want to delete your resume? This action cannot be undone. You will need to upload a new resume to apply for opportunities.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteResume}
+                  className="px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete Resume
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Withdraw Application Confirmation Modal */}
+        {withdrawConfirmId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-start mb-4">
+                <div className="flex-shrink-0">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Withdraw Application?
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Are you sure you want to withdraw your application? This will remove your application from this opportunity.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setWithdrawConfirmId(null)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleWithdraw}
+                  className="px-4 py-2 bg-orange-600 text-white font-medium rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  Withdraw Application
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

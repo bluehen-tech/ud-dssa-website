@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContactFormData } from '@/types/contact';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   try {
     const formData: ContactFormData = await request.json();
+    
+    // Create Supabase client for server-side operation
+    const supabase = createClient();
     
     // Prepare data for Supabase insertion
     const submissionData = {

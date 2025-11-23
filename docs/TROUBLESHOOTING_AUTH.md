@@ -1,5 +1,7 @@
 # Authentication Troubleshooting Guide
 
+> **⚠️ This file is deprecated. See [docs/SUPABASE.md](./SUPABASE.md) for the consolidated documentation.**
+
 ## Issue: Admin Status Not Loading
 
 ### Symptoms:

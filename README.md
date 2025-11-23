@@ -47,9 +47,10 @@ ud-dssa-website/
 │       ├── contact.ts    # Contact form types
 │       └── opportunity.ts # Opportunity types
 ├── docs/                 # Documentation
-│   ├── AUTH_IMPLEMENTATION_SUMMARY.md
-│   ├── TROUBLESHOOTING_AUTH.md
-│   └── SUPABASE_SETUP.md
+│   ├── SUPABASE.md       # Consolidated Supabase authentication guide (single source of truth)
+│   ├── AUTH_IMPLEMENTATION_SUMMARY.md (deprecated - see SUPABASE.md)
+│   ├── TROUBLESHOOTING_AUTH.md (deprecated - see SUPABASE.md)
+│   └── SUPABASE_SETUP.md (deprecated - see SUPABASE.md)
 ├── supabase/             # Supabase SQL scripts
 │   ├── MUST_RUN_THIS.sql
 │   └── fix_profiles_rls.sql
@@ -115,7 +116,7 @@ Before using authentication features, you need to configure Supabase:
    - Add your production URLs when deploying
 4. Update `.env.local` with your Supabase URL and anon key
 
-See `docs/SUPABASE_SETUP.md` for detailed instructions.
+See `docs/SUPABASE.md` for detailed instructions (consolidated documentation).
 
 ## Content Management
 
@@ -220,7 +221,7 @@ Get these from: Supabase Dashboard → Settings → API
 #### Magic Link Email Delivery
 Magic link emails are sent via an SMTP server using the **bluehen-dssa.org** domain name through the **RESEND** email service. RESEND provides a free tier with up to **100 emails per day**, which is sufficient for our authentication needs. This ensures reliable email delivery and professional branding for all authentication emails.
 
-See `docs/AUTH_IMPLEMENTATION_SUMMARY.md` for technical details.
+See `docs/SUPABASE.md` for complete authentication documentation.
 
 ## Contact
 

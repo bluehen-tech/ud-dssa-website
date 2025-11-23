@@ -1,7 +1,7 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 // Singleton instance to avoid multiple GoTrueClient instances
-let supabaseClient: ReturnType<typeof createSupabaseClient> | null = null;
+let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
 
 export const createClient = () => {
   // Return existing client if available
@@ -14,23 +14,18 @@ export const createClient = () => {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase environment variables. Please check your .env.local file.');
-    // Return a mock client to prevent crashes, but it won't work
-    // This allows the app to render even if Supabase isn't configured
-    supabaseClient = createSupabaseClient(
-      supabaseUrl || 'https://placeholder.supabase.co',
-      supabaseAnonKey || 'placeholder-key'
-    );
-    return supabaseClient;
+    throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set');
   }
 
-  // Create new client with proper configuration
-  supabaseClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+  // Create new client with proper browser configuration
+  // Using PKCE flow for magic links - matches custom email template that uses token_hash
+  // Email template redirects to /auth/confirm?token_hash={{ .TokenHash }}&type=email
+  supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      flowType: 'implicit', // Use implicit flow for magic links
+      flowType: 'pkce', // PKCE flow required for custom email template with token_hash
     },
     global: {
       headers: {

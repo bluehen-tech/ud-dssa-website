@@ -1,5 +1,7 @@
 # Authentication Implementation Summary
 
+> **⚠️ This file is deprecated. See [docs/SUPABASE.md](./SUPABASE.md) for the consolidated documentation.**
+
 ## ✅ All Features Working
 
 ### 1. User Authentication with Magic Links
