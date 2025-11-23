@@ -217,6 +217,9 @@ Get these from: Supabase Dashboard → Settings → API
 - **Session Management**: 4-hour session duration with auto-refresh
 - **Domain Validation**: Only @udel.edu emails are allowed
 
+#### Magic Link Email Delivery
+Magic link emails are sent via an SMTP server using the **bluehen-dssa.org** domain name through the **RESEND** email service. RESEND provides a free tier with up to **100 emails per day**, which is sufficient for our authentication needs. This ensures reliable email delivery and professional branding for all authentication emails.
+
 See `docs/AUTH_IMPLEMENTATION_SUMMARY.md` for technical details.
 
 ## Contact
