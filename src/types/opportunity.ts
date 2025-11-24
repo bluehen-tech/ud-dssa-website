@@ -14,5 +14,11 @@ export interface Opportunity {
   postedDate: string;
   deadline?: string;
   tags?: string[];
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentPath?: string;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 

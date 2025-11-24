@@ -5,16 +5,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import ContactForm from '@/components/ContactForm';
 import heroWatermark from '@/images/heroWatermark.png';
-import { opportunities } from '@/data/opportunities';
-import { OpportunityType } from '@/types/opportunity';
+import { Opportunity, OpportunityType } from '@/types/opportunity';
 import { Event } from '@/types/event';
 import { createClient } from '@/lib/supabase-browser';
 import { useAuth } from '@/contexts/AuthContext';
+import { recordToOpportunity } from '@/utils/opportunityTransforms';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(true);
   const { session, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -62,6 +64,45 @@ export default function Home() {
     setCurrentEventIndex(0);
   }, [upcomingEvents.length]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchOpportunities = async () => {
+      try {
+        setLoadingOpportunities(true);
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('opportunities')
+          .select('*')
+          .order('posted_at', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted) {
+          setOpportunities((data || []).map(recordToOpportunity));
+        }
+      } catch (fetchError) {
+        console.error('Error fetching opportunities:', fetchError);
+        if (isMounted) {
+          setOpportunities([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingOpportunities(false);
+        }
+      }
+    };
+
+    fetchOpportunities();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const scrollToForm = () => {
     // Use setTimeout to ensure DOM is ready
     setTimeout(() => {
@@ -102,10 +143,8 @@ export default function Home() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  // Get the 3 most recent opportunities
-  const recentOpportunities = opportunities
-    .sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
-    .slice(0, 3);
+  // Get the 3 most recent opportunities from Supabase
+  const recentOpportunities = opportunities.slice(0, 3);
   const showMobileCTA = !authLoading && !session;
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -309,7 +348,7 @@ export default function Home() {
                 {recentOpportunities.map((opportunity) => (
                   <Link
                     key={opportunity.id}
-                    href={`/opportunities/${opportunity.id}`}
+                    href="/opportunities"
                     className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-primary"
                   >
                     <div className="flex items-start justify-between mb-2">

@@ -1,6 +1,6 @@
 import { Opportunity } from '@/types/opportunity';
 
-export const opportunities: Opportunity[] = [
+export const sampleOpportunities: Opportunity[] = [
   {
     id: '1',
     title: 'Data Science Intern',
