@@ -46,7 +46,8 @@ export default function Header() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-bold text-blue-primary leading-tight">
-                    DSSA @ University of Delaware
+                    <span className="md:hidden">DSSA @ UD</span>
+                    <span className="hidden md:inline">DSSA @ University of Delaware</span>
                   </span>
                   <span className="text-xs text-gray-500 leading-tight">
                     bluehen-dssa.org

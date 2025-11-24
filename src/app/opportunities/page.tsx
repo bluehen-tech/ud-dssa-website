@@ -1099,7 +1099,7 @@ export default function OpportunitiesPage() {
                       )}
                       {applicationStatus === 'not-applied' && (
                         <p className="text-sm text-gray-600 text-center">
-                          Upload a resume below to apply to this opportunity.
+                          Upload a resume to apply to this opportunity.
                         </p>
                       )}
                       {opportunity.applicationUrl && (
