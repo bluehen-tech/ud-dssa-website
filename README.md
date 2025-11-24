@@ -164,13 +164,17 @@ The website uses **Supabase** for reliable form submission storage and managemen
 
 ### Vercel Deployment
 
+To deploy this project to Vercel:
+
 1. Create a Vercel account at [vercel.com](https://vercel.com)
-2. Connect your GitHub repository
-3. **Configure environment variables** in Vercel dashboard:
+2. Install the Vercel CLI: `npm install -g vercel`
+3. Run `vercel login` and follow the prompts
+4. **Set up Supabase environment variables** in Vercel dashboard:
    - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
-4. Deploy the project
-5. **Update Supabase redirect URLs**:
+5. From the project root, run `vercel` to deploy
+6. **Important**: Make sure your repository is set to private for data security
+7. **Update Supabase redirect URLs**:
    - Go to Supabase Dashboard → Authentication → URL Configuration
    - Add your production URLs:
      - `https://your-app.vercel.app/login`

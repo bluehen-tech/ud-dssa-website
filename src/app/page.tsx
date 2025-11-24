@@ -39,17 +39,21 @@ export default function Home() {
           .select('*')
           .gte('event_date', nowIso)
           .order('event_date', { ascending: true })
-          .limit(3) as any;
+          .limit(3);
 
         if (error) {
           throw error;
         }
 
-        if (isMounted) {
-          setUpcomingEvents(data || []);
+        if (isMounted && data) {
+          // Type assertion is safe here since we know the Event interface matches the database schema
+          setUpcomingEvents(data as Event[]);
         }
       } catch (fetchError) {
         console.error('Error fetching upcoming events:', fetchError);
+        if (isMounted) {
+          setUpcomingEvents([]);
+        }
       }
     };
 
@@ -104,6 +108,9 @@ export default function Home() {
   }, []);
 
   const scrollToForm = () => {
+    // Guard against SSR - only run on client
+    if (typeof window === 'undefined') return;
+    
     // Use setTimeout to ensure DOM is ready
     setTimeout(() => {
       const formElement = document.getElementById('contact-form');
@@ -285,7 +292,7 @@ export default function Home() {
                 {/* Frosted glass backdrop for paragraph */}
                 <div className="relative bg-white/60 backdrop-blur-[1px] rounded-lg px-3 py-2 inline-block">
                   <p className="text-xl text-gray-700 font-medium drop-shadow-sm">
-                    Graduate student–led association building collaborative tools<br></br>and opportunities within UD's data science ecosystem
+                    Graduate student–led association building collaborative tools<br />and opportunities within UD's data science ecosystem
                   </p>
                 </div>
               </div>

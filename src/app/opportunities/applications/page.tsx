@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase-browser';
-import { opportunities } from '@/data/opportunities';
+import { recordToOpportunity } from '@/utils/opportunityTransforms';
+import { Opportunity } from '@/types/opportunity';
 
 interface ApplicationWithUser {
   id: string;
@@ -22,15 +23,36 @@ interface ApplicationWithUser {
 export default function ApplicationsAdminPage() {
   const { session, isAdmin, isLoading } = useAuth();
   const [applications, setApplications] = useState<ApplicationWithUser[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [selectedOpportunity, setSelectedOpportunity] = useState<string>('all');
   const [isLoadingApps, setIsLoadingApps] = useState(true);
+  const [isLoadingOpps, setIsLoadingOpps] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (session && isAdmin) {
       fetchApplications();
+      fetchOpportunities();
     }
   }, [session, isAdmin]);
+
+  const fetchOpportunities = async () => {
+    try {
+      setIsLoadingOpps(true);
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from('opportunities')
+        .select('*')
+        .order('posted_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setOpportunities((data || []).map(recordToOpportunity));
+    } catch (err) {
+      console.error('Error fetching opportunities:', err);
+    } finally {
+      setIsLoadingOpps(false);
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -129,7 +151,7 @@ export default function ApplicationsAdminPage() {
   };
 
   // Show loading state
-  if (isLoading || isLoadingApps) {
+  if (isLoading || isLoadingApps || isLoadingOpps) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
