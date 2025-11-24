@@ -7,14 +7,75 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBaseURL } from '@/lib/get-url';
 import Link from 'next/link';
 
+// Configuration: Choose 'otp' or 'magic-link' for authentication method
+// Set to 'otp' by default to avoid spam filters flagging links
+const AUTH_METHOD: 'otp' | 'magic-link' = 'otp';
+
+// OTP Input Component
+function OTPInput({ value, onChange, disabled }: { value: string; onChange: (value: string) => void; disabled: boolean }) {
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleChange = (index: number, char: string) => {
+    if (!/^\d$/.test(char) && char !== '') return;
+    
+    const newValue = value.split('');
+    newValue[index] = char;
+    const updatedValue = newValue.join('').slice(0, 6);
+    onChange(updatedValue);
+
+    // Auto-focus next input
+    if (char && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6).replace(/\D/g, '');
+    if (pastedData) {
+      onChange(pastedData);
+      const nextIndex = Math.min(pastedData.length, 5);
+      inputRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  return (
+    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+      {[0, 1, 2, 3, 4, 5].map((index) => (
+        <input
+          key={index}
+          ref={(el) => (inputRefs.current[index] = el)}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[index] || ''}
+          onChange={(e) => handleChange(index, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(index, e)}
+          disabled={disabled}
+          className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-primary focus:border-blue-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        />
+      ))}
+    </div>
+  );
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { session } = useAuth();
   const [email, setEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const processingAuthRef = useRef(false);
 
   // Auto-redirect if user is logged in
@@ -155,13 +216,16 @@ function LoginForm() {
     e.preventDefault();
     const startTime = Date.now();
     
+    const methodName = AUTH_METHOD === 'otp' ? 'OTP CODE' : 'MAGIC LINK';
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🔐 MAGIC LINK REQUEST STARTED');
+    console.log(`🔐 ${methodName} REQUEST STARTED`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('🔧 Auth method:', AUTH_METHOD);
     
     setError('');
     setIsSuccess(false);
+    setOtpSent(false);
 
     // Client-side validation
     if (!email) {
@@ -187,30 +251,32 @@ function LoginForm() {
     try {
       const supabase = createClient();
       
-      // Build redirect URL using getBaseURL() for environment-aware URLs
-      // This supports localhost, Vercel previews, and production
-      // We pass the base URL so {{ .RedirectTo }} in template can construct the confirmation URL
       const baseURL = getBaseURL();
       const redirect = searchParams.get('redirect');
-      // Pass base URL only (no /login) - template will construct /auth/confirm path
-      const redirectUrl = baseURL;
+      
+      // For magic link, we need redirect URL. For OTP, it's not needed.
+      const redirectUrl = AUTH_METHOD === 'magic-link' ? baseURL : undefined;
       
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('📤 CALLING supabase.auth.signInWithOtp()');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('📧 Email:', email);
-      console.log('🌐 Base URL:', baseURL);
-      console.log('🔗 emailRedirectTo:', redirectUrl);
+      console.log('🔧 Auth method:', AUTH_METHOD);
+      if (AUTH_METHOD === 'magic-link') {
+        console.log('🌐 Base URL:', baseURL);
+        console.log('🔗 emailRedirectTo:', redirectUrl);
+        console.log('🔧 Flow type: PKCE (configured in supabase-browser.ts)');
+        console.log('💡 Template will use: {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email');
+      } else {
+        console.log('💡 OTP mode: Email template should include {{ .Token }}');
+      }
       console.log('👤 shouldCreateUser: true');
-      console.log('🔧 Flow type: PKCE (configured in supabase-browser.ts)');
-      console.log('💡 Environment-aware URL (supports localhost, Vercel previews, production)');
-      console.log('💡 Template will use {{ .RedirectTo }} to get this URL');
       
       const requestStartTime = Date.now();
       const { data, error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: redirectUrl,
+          ...(redirectUrl && { emailRedirectTo: redirectUrl }),
           shouldCreateUser: true,
         },
       });
@@ -230,58 +296,40 @@ function LoginForm() {
         console.error('🚨 Error code:', signInError.status || 'N/A');
         console.error('🚨 Error message:', signInError.message);
         console.error('🚨 Full error object:', JSON.stringify(signInError, null, 2));
-      console.error('💡 Common causes:');
-      console.error('   - Invalid redirect URL (check Supabase dashboard)');
-      console.error('   - Rate limit exceeded (3 emails/hour per address)');
-      console.error('   - Email provider disabled in Supabase');
-      console.error('   - SMTP configuration issue');
-      console.error('   - Email template mismatch (PKCE vs Implicit flow)');
-      console.error('');
-      console.error('🔍 TEMPLATE CHECK:');
-      console.error('   Your code uses PKCE flow (flowType: "pkce")');
-      console.error('   Template MUST use: {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email');
-      console.error('   Template should NOT use: {{ .ConfirmationURL }} (that is for implicit flow)');
-      console.error('');
-      console.error('🔧 SMTP TROUBLESHOOTING STEPS:');
-      console.error('   1. Go to Supabase Dashboard → Project Settings → Authentication');
-      console.error('   2. Check "SMTP Settings" section');
-      console.error('   3. If "Enable Custom SMTP" is ON:');
-      console.error('      - Verify SMTP host, port, username, password are correct');
-      console.error('      - Test SMTP connection');
-      console.error('      - Check if RESEND API key is valid (if using RESEND)');
-      console.error('   4. If "Enable Custom SMTP" is OFF:');
-      console.error('      - Supabase uses built-in email (should work)');
-      console.error('      - Check Supabase status page for email service issues');
-      console.error('   5. Check Supabase Dashboard → Logs → Auth Logs for detailed SMTP errors');
-      console.error('   6. Verify email template syntax is correct');
-      console.error('      - Template should use: {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email');
-      console.error('');
-      console.error('📧 Your setup uses RESEND with bluehen-dssa.org domain');
-      console.error('   - Verify RESEND API key is configured in Supabase');
-      console.error('   - Check RESEND dashboard for email delivery issues');
-      console.error('   - Verify domain verification status in RESEND');
         
-        setError(signInError.message || 'Failed to send magic link. Please try again.');
+        setError(signInError.message || `Failed to send ${AUTH_METHOD === 'otp' ? 'OTP code' : 'magic link'}. Please try again.`);
         setIsLoading(false);
         return;
       }
 
       const totalDuration = Date.now() - startTime;
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('✅ MAGIC LINK SENT SUCCESSFULLY');
+      console.log(`✅ ${methodName} SENT SUCCESSFULLY`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('⏱️ Total duration:', totalDuration, 'ms');
       console.log('📧 Email sent to:', email);
-      console.log('🔗 Magic link will redirect to:', redirectUrl);
-      console.log('💡 Next steps:');
-      console.log('   1. Check email inbox (and spam folder)');
-      console.log('   2. Click the magic link in the email');
-      console.log('   3. Link will open /auth/confirm?token_hash=...');
-      console.log('   4. Server will exchange token_hash for session');
+      
+      if (AUTH_METHOD === 'otp') {
+        console.log('💡 Next steps:');
+        console.log('   1. Check email inbox (and spam folder)');
+        console.log('   2. Enter the 6-digit code from the email');
+        console.log('   3. Code will be verified to create session');
+      } else {
+        console.log('🔗 Magic link will redirect to:', redirectUrl);
+        console.log('💡 Next steps:');
+        console.log('   1. Check email inbox (and spam folder)');
+        console.log('   2. Click the magic link in the email');
+        console.log('   3. Link will open /auth/confirm?token_hash=...');
+        console.log('   4. Server will exchange token_hash for session');
+      }
       console.log('   5. You will be redirected to:', redirect || '/opportunities');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      setIsSuccess(true);
+      if (AUTH_METHOD === 'otp') {
+        setOtpSent(true);
+      } else {
+        setIsSuccess(true);
+      }
       setIsLoading(false);
 
     } catch (err) {
@@ -298,6 +346,76 @@ function LoginForm() {
       
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (otpCode.length !== 6) {
+      setError('Please enter the complete 6-digit code');
+      return;
+    }
+
+    setIsVerifying(true);
+    setError('');
+
+    try {
+      const supabase = createClient();
+      
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔐 VERIFYING OTP CODE');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📧 Email:', email);
+      console.log('🔢 Code:', otpCode);
+      
+      const { data: { session }, error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email',
+      });
+
+      if (verifyError) {
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('❌ OTP VERIFICATION ERROR');
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('🚨 Error:', verifyError);
+        console.error('🚨 Error message:', verifyError.message);
+        
+        setError(verifyError.message || 'Invalid code. Please try again.');
+        setIsVerifying(false);
+        return;
+      }
+
+      if (session) {
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✅ OTP VERIFIED SUCCESSFULLY');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('👤 User:', session.user.email);
+        console.log('🆔 User ID:', session.user.id);
+
+        // Verify email domain (@udel.edu only)
+        const userEmail = session.user.email;
+        if (!userEmail || !userEmail.endsWith('@udel.edu')) {
+          console.error('❌ EMAIL DOMAIN VALIDATION FAILED');
+          await supabase.auth.signOut();
+          setError('Invalid email domain. Only @udel.edu emails are allowed.');
+          setIsVerifying(false);
+          return;
+        }
+
+        // Redirect after successful verification
+        const redirect = searchParams.get('redirect');
+        const nextUrl = redirect || '/opportunities';
+        
+        console.log('🔄 Redirecting to:', nextUrl);
+        setTimeout(() => {
+          window.location.href = nextUrl;
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('❌ UNEXPECTED ERROR DURING OTP VERIFICATION');
+      console.error('🚨 Error:', err);
+      setError('An unexpected error occurred. Please try again.');
+      setIsVerifying(false);
     }
   };
 
@@ -347,10 +465,65 @@ function LoginForm() {
           Sign In
         </h1>
         <p className="text-gray-600 text-center mb-6">
-          Enter your UD email to receive a magic link
+          {AUTH_METHOD === 'otp' 
+            ? 'Enter your UD email to receive a verification code'
+            : 'Enter your UD email to receive a magic link'}
         </p>
 
-        {isSuccess ? (
+        {otpSent ? (
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-800 text-sm text-center">
+                <strong>✅ Code sent!</strong> We've sent a 6-digit code to <strong>{email}</strong>.
+              </p>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-blue-800 text-xs text-center">
+                <strong>💡 Can't find the email?</strong> Please check your <strong>spam</strong> or <strong>junk</strong> folder.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-3 text-center">
+                  Enter the 6-digit code from your email
+                </label>
+                <OTPInput 
+                  value={otpCode} 
+                  onChange={setOtpCode} 
+                  disabled={isVerifying}
+                />
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-800 text-sm text-center">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleVerifyOTP}
+                  disabled={isVerifying || otpCode.length !== 6}
+                  className="flex-1 px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  {isVerifying ? 'Verifying...' : 'Verify Code'}
+                </button>
+                <button
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtpCode('');
+                    setError('');
+                  }}
+                  disabled={isVerifying}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  Change Email
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : isSuccess ? (
           <div className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 text-sm">
@@ -402,7 +575,11 @@ function LoginForm() {
               disabled={isLoading}
               className="w-full px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
-              {isLoading ? 'Sending...' : 'Send Magic Link'}
+              {isLoading 
+                ? 'Sending...' 
+                : AUTH_METHOD === 'otp' 
+                  ? 'Send Verification Code' 
+                  : 'Send Magic Link'}
             </button>
           </form>
         )}

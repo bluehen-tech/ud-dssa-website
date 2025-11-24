@@ -91,18 +91,32 @@ https://bluehen-dssa.org
 
 #### Email Templates
 
-The magic link email template is configured in:
+The email template is configured in:
 - **Authentication** → **Email Templates** → **Magic Link**
 
-**This Application Uses PKCE Flow (Magic Links):**
-This application uses Magic Links with PKCE flow for enhanced security. According to the [Supabase documentation](https://supabase.com/docs/guides/auth/auth-email-passwordless), `signInWithOtp()` is used for both Magic Links and OTP - the difference is determined by the email template content.
+**This Application Supports Both Magic Links and OTP:**
+This application supports both Magic Links and OTP (One-Time Password) authentication methods. According to the [Supabase documentation](https://supabase.com/docs/guides/auth/auth-email-passwordless), `signInWithOtp()` is used for both - the difference is determined by the email template content.
 
-**Magic Link Template (Environment-Aware):**
+**Current Default: OTP** (to avoid spam filters flagging links)
+
+**OTP Template (Recommended - Default):**
+```
+<h2>Log in to Blue Hen DSSA</h2>
+<p>Your one-time login code is:</p>
+<p style="font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
+  {{ .Token }}
+</p>
+<p>Enter this code on the login page to complete your sign-in.</p>
+<p>This code will expire in 1 hour.</p>
+<p>If you didn't request this code, you can ignore this email.</p>
+```
+
+**Magic Link Template (Alternative):**
 ```
 <h2>Log in to Blue Hen DSSA</h2>
 <p>Your secure login link is ready:</p>
 <p>
-  <a href="{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">
     Click here to log in
   </a>
 </p>
@@ -110,15 +124,13 @@ This application uses Magic Links with PKCE flow for enhanced security. Accordin
 ```
 
 **Key Points:**
-- ✅ Using `signInWithOtp()` method (correct for Magic Links)
-- ✅ Template uses `{{ .TokenHash }}` (PKCE flow for Magic Links)
-- ✅ Template contains clickable link (Magic Link, not OTP)
-- ✅ Verification uses `token_hash` parameter (Magic Link PKCE flow)
-- ✅ Uses `{{ .RedirectTo }}` - Environment-aware (from `emailRedirectTo` parameter)
-- Automatically works with localhost, Vercel previews, and production
-- No need to change Supabase Site URL when switching environments
-- Magic links redirect to `/auth/confirm` endpoint
-- Server-side token exchange provides better security
+- ✅ Using `signInWithOtp()` method (works for both Magic Links and OTP)
+- ✅ **OTP Template:** Uses `{{ .Token }}` to display the 6-digit code (no links)
+- ✅ **Magic Link Template:** Uses `{{ .TokenHash }}` (PKCE flow for Magic Links)
+- ✅ **OTP:** User enters code manually in the login form
+- ✅ **Magic Link:** User clicks link in email (redirects to `/auth/confirm`)
+- ✅ OTP is less likely to be flagged by spam filters (no hyperlinks)
+- The authentication method can be changed in `src/app/login/page.tsx` via the `AUTH_METHOD` constant
 - Requires `/auth/confirm` route handler (already implemented)
 
 **How It Works:**
