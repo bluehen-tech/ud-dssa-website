@@ -6,13 +6,13 @@ import type { MemberPortfolio } from '@/types/member';
 // Import member portfolios here
 // TODO: Add member portfolio imports as they are created
 // Example:
-import { tejasPawar } from './officers/tejas-pawar';
+// import { tejasPawar } from './officers/tejas-pawar';
 // import { johnDoe } from './members/john-doe';
 // import { janeSmith } from './alumni/jane-smith';
 
 // Combine all members
 export const allMembers: MemberPortfolio[] = [
-  tejasPawar
+  // tejasPawar
   // Example: tejasPawar, johnDoe, janeSmith,
 ];
 
