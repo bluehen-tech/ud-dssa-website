@@ -15,8 +15,10 @@ export interface Experience {
   startDate: string;
   endDate?: string;
   current?: boolean;
-  description: string[];
   location?: string;
+  responsibilities?: string[]; // Key Responsibilities
+  achievements?: string[]; // Key Achievements
+  description?: string[]; // General description (fallback if responsibilities/achievements not used)
 }
 
 export interface Education {
@@ -26,6 +28,10 @@ export interface Education {
   endYear: number;
   location?: string;
   current?: boolean;
+  fieldOfStudy?: string; // e.g., "Applied Mathematics & Astrophysics"
+  gpa?: number; // e.g., 4.0
+  honors?: string[]; // e.g., ["Summa Cum Laude", "Outstanding Dissertation Award"]
+  relevantCoursework?: string[]; // Array of course names
 }
 
 export interface MemberPortfolio {
@@ -35,10 +41,12 @@ export interface MemberPortfolio {
   name: string;
   email: string;
   bio: string;
-  tagline?: string; // Short description/tagline
+  tagline?: string; // Short description/tagline (e.g., "Applied Mathematics & Astrophysics")
+  major?: string; // Field of study/major (e.g., "Applied Mathematics & Astrophysics")
+  graduationDate?: string; // Formatted graduation date (e.g., "May 2028", "Graduating May 2028")
   profileImageUrl?: string;
   skills: {
-    category: string;
+    category?: string; // Optional category (if not provided, skills are flat list)
     items: string[];
   }[];
   experience?: Experience[];
@@ -54,7 +62,10 @@ export interface MemberPortfolio {
     title: string;
     description?: string;
     date?: string;
+    organization?: string; // e.g., "Cosmic Research Foundation"
+    link?: string; // URL to learn more
   }[];
-  graduationYear?: number; // For alumni
+  interests?: string[]; // Array of interests
+  graduationYear?: number; // For alumni (deprecated, use graduationDate instead)
 }
 
