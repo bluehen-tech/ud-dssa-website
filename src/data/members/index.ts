@@ -6,7 +6,7 @@ import type { MemberPortfolio } from '@/types/member';
 // Import member portfolios here
 // TODO: Add member portfolio imports as they are created
 // Example:
-// import { tejasPawar } from './officers/tejas-pawar';
+import { aaron } from './members/aarononserio';
 // import { johnDoe } from './members/john-doe';
 // import { janeSmith } from './alumni/jane-smith';
 
@@ -14,6 +14,7 @@ import type { MemberPortfolio } from '@/types/member';
 export const allMembers: MemberPortfolio[] = [
   // tejasPawar
   // Example: tejasPawar, johnDoe, janeSmith,
+  aaron
 ];
 
 // Export by role for easy filtering
