@@ -12,9 +12,9 @@ export const aaron: MemberPortfolio = {
   email: 'onserioa@udel.edu',
   tagline: 'Bioinformatic, Machine Learning, Data Science and Analytics', // Optional - e.g., "Data Science Student | AI Builder"
   major: 'Bioinformatician  & Data Analyst', // Optional - e.g., "Applied Mathematics & Astrophysics"
-  graduationDate: 'Graduating May 2025', // Optional - e.g., "May 2028" or "Graduating May 2028"
+  graduationDate: 'Graduating December 2025', // Optional - e.g., "May 2028" or "Graduating May 2028"
   bio: 'I am a Bioinformatics and Data Science graduate student at the University of Delaware, focusing on machine learning, multi-omics analysis, and deep learning for biomedical imaging. I work on projects involving U-Net–based myotube segmentation, RNA-seq differential expression analysis, drug–target interaction prediction models, and clinical data workflows. I enjoy building scalable pipelines, developing full-stack analysis tools, and applying AI to solve real-world biological and healthcare problems.',
-  profileImageUrl: '/images/members/your-image.jpg', // Optional - add image to public/images/members/
+  profileImageUrl: '/Users/mac/Desktop/Fall_2025/ud-dssa-website/src/data/members/members/image.JPG', // Optional - add image to public/images/members/
   links: {
     linkedin: 'https://www.linkedin.com/in/aaron-onserio-6a505aa4/', // Optional
     github: 'https://github.com/AaronOnserio', // Optional
@@ -83,7 +83,7 @@ export const aaron: MemberPortfolio = {
       technologies: ['R', 'DESeq2', 'STAR', 'FastQC'], // Optional - array of technologies used
       githubUrl: 'https://github.com/AaronOnserio', // Optional
       liveUrl: 'https://yourproject.com', // Optional
-      imageUrl: '', // Optional
+      imageUrl: '/Users/mac/Desktop/Fall_2025/ud-dssa-website/src/data/members/members/image.JPG', // Optional
     },
   ],
   skills: [
