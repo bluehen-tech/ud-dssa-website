@@ -5,8 +5,8 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createClient(request);
 
-  // Protected routes (only /officers requires authentication)
-  const protectedPaths = ['/officers'];
+  // Protected routes (require authentication)
+  const protectedPaths = ['/officers', '/email'];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
