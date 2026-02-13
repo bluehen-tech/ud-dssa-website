@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const formData: ContactFormData = await request.json();
     
     // Create Supabase client for server-side operation
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Prepare data for Supabase insertion
     const submissionData = {
