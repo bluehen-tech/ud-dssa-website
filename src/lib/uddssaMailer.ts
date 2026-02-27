@@ -126,10 +126,10 @@ async function callAiProvider(
   if (provider === "openai") {
     const resolvedModel = (
       model ||
-      process.env.OPENAI_MODEL ||
+      process.env.OPENAI_MODEL ||  // # setting to gpt-5-mini in Vercel env var
       "gpt-4.1-mini"
     ).trim();
-
+    
     url = "https://api.openai.com/v1/responses";
     headers = {
       Authorization: `Bearer ${apiKey}`,
