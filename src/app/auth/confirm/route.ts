@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   console.log('✅ Required parameters validated');
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
     console.log('✅ Supabase client created');
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

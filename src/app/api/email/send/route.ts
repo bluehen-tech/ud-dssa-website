@@ -18,7 +18,7 @@ import { getBaseURL } from "@/lib/get-url";
 export async function POST(request: NextRequest) {
   try {
     // ── Auth: require an authenticated admin ───────────────────────────────
-    const supabase = await createClient();
+    const supabase = createClient();
     const {
       data: { user },
       error: authError,
