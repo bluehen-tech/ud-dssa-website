@@ -124,19 +124,36 @@ async function callAiProvider(
   let payload: Record<string, unknown>;
 
   if (provider === "openai") {
+    const resolvedModel = (
+      model ||
+      process.env.OPENAI_MODEL ||
+      "gpt-4.1-mini"
+    ).trim();
+
     url = "https://api.openai.com/v1/responses";
     headers = {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     };
+
+    const openAiOrg = process.env.OPENAI_ORGANIZATION?.trim();
+    const openAiProject = process.env.OPENAI_PROJECT?.trim();
+    if (openAiOrg) headers["OpenAI-Organization"] = openAiOrg;
+    if (openAiProject) headers["OpenAI-Project"] = openAiProject;
+
     payload = {
-      model: model || "gpt-4.1-mini",
+      model: resolvedModel,
       input: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
       ],
       store: false,
     };
+
+    if (process.env.LOG_AI_CONFIG === "true") {
+      const keySuffix = apiKey.slice(-6);
+      console.log("[AI] provider=openai model=%s key=...%s org=%s project=%s", resolvedModel, keySuffix, openAiOrg ? "set" : "unset", openAiProject ? "set" : "unset");
+    }
   } else {
     // deepseek
     url = "https://api.deepseek.com/chat/completions";
@@ -161,9 +178,13 @@ async function callAiProvider(
   });
 
   if (!res.ok) {
+    const requestId =
+      res.headers.get("x-request-id") ??
+      res.headers.get("openai-request-id") ??
+      undefined;
     const errText = await res.text().catch(() => "(no body)");
     throw new Error(
-      `${provider} API error (${res.status}): ${errText.slice(0, 500)}`
+      `${provider} API error (${res.status})${requestId ? ` [request_id: ${requestId}]` : ""}: ${errText.slice(0, 500)}`
     );
   }
 
