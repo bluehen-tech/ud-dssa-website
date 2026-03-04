@@ -1,14 +1,35 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { officers, members, alumni, allMembers } from '@/data/members';
+import { useAuth } from '@/contexts/AuthContext';
 import type { MemberPortfolio } from '@/types/member';
 
 type TabType = 'officers' | 'members' | 'alumni';
 
 export default function MembersPage() {
+  const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('officers');
+  const [portfolios, setPortfolios] = useState<MemberPortfolio[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/member-portfolios')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.success && Array.isArray(data.portfolios)) {
+          setPortfolios(data.portfolios);
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const officers = portfolios.filter((p) => p.role === 'officer');
+  const members = portfolios.filter((p) => p.role === 'member');
+  const alumni = portfolios.filter((p) => p.role === 'alumni');
 
   const getCurrentMembers = (): MemberPortfolio[] => {
     switch (activeTab) {
@@ -30,12 +51,24 @@ export default function MembersPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white p-8 rounded-lg shadow-lg mb-6">
-          <h1 className="text-4xl font-bold text-blue-primary mb-2">
-            Members
-          </h1>
-          <p className="text-xl text-gray-600">
-            Meet the talented members of the Data Science Student Association at UD.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-blue-primary mb-2">
+                Members
+              </h1>
+              <p className="text-xl text-gray-600">
+                Meet the talented members of the Data Science Student Association at UD.
+              </p>
+            </div>
+            {session && (
+              <Link
+                href="/members/me"
+                className="inline-flex items-center px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors"
+              >
+                My portfolio
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -75,19 +108,25 @@ export default function MembersPage() {
         </div>
 
         {/* Members Grid */}
-        {currentMembers.length === 0 ? (
+        {loading ? (
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+            <p className="text-gray-600">Loading members...</p>
+          </div>
+        ) : currentMembers.length === 0 ? (
           <div className="bg-white p-8 rounded-lg shadow-lg text-center">
             <p className="text-gray-600 mb-4">
               No {activeTab} portfolios available yet. Check back soon!
             </p>
             <p className="text-sm text-gray-500">
-              Members can create their portfolios by copying the template file and adding their information.
+              {session ? 'Create your portfolio using the button above.' : 'Sign in with your @udel.edu email to create your portfolio.'}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentMembers.map((member) => (
-              <MemberCard key={member.id} member={member} />
+              <Link key={member.id} href={`/members/${member.id}`} className="block focus:outline-none focus:ring-2 focus:ring-blue-primary focus:ring-offset-2 rounded-lg">
+                <MemberCard member={member} />
+              </Link>
             ))}
           </div>
         )}

@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const { supabase, response } = createClient(request);
 
   // Protected routes (require authentication)
-  const protectedPaths = ['/officers', '/email', '/contacts'];
+  const protectedPaths = ['/officers', '/email', '/contacts', '/admin', '/members/me'];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );

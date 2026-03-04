@@ -70,6 +70,9 @@ export default function Header() {
               </Link>
               {isAdmin && (
                 <>
+                  <Link href="/admin/portfolios" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
+                    Portfolios
+                  </Link>
                   <Link href="/contacts" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
                     Contacts
                   </Link>
@@ -169,6 +172,13 @@ export default function Header() {
             </Link>
             {isAdmin && (
               <>
+                <Link 
+                  href="/admin/portfolios" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary"
+                >
+                  Portfolios
+                </Link>
                 <Link 
                   href="/contacts" 
                   onClick={() => setIsMenuOpen(false)}
