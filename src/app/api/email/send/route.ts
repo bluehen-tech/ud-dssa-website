@@ -3,6 +3,35 @@ import { createClient } from "@/lib/supabase-server";
 import { personaliseBody, appendUnsubscribeLink } from "@/lib/uddssaMailer";
 import { getBaseURL } from "@/lib/get-url";
 
+// ── Sender address resolution ─────────────────────────────────────────────
+
+type EmailType = "newsletter" | "event" | "opportunity" | "announcement";
+
+const SENDER_ENV_MAP: Record<EmailType, string> = {
+  newsletter: "RESEND_FROM_NEWSLETTER",
+  event: "RESEND_FROM_EVENT",
+  opportunity: "RESEND_FROM_OPPORTUNITY",
+  announcement: "RESEND_FROM_ANNOUNCEMENT",
+};
+
+const VALID_EMAIL_TYPES: EmailType[] = ["newsletter", "event", "opportunity", "announcement"];
+
+function resolveFromAddress(senderKey?: string, emailType?: string): string {
+  const key = (senderKey || emailType || "newsletter") as EmailType;
+  const envVar = SENDER_ENV_MAP[key];
+
+  if (envVar && process.env[envVar]) {
+    return process.env[envVar]!;
+  }
+
+  // Fallback chain: type-specific -> newsletter -> RESEND_FROM -> hardcoded default
+  return (
+    process.env.RESEND_FROM_NEWSLETTER ||
+    process.env.RESEND_FROM ||
+    "DSSA <no-reply@bluehen-dssa.org>"
+  );
+}
+
 /**
  * POST /api/email/send
  *
@@ -13,6 +42,8 @@ import { getBaseURL } from "@/lib/get-url";
  *   subject: string;
  *   body: string;            // may contain {name} placeholder
  *   recipients: Array<{ email: string; name?: string }>;
+ *   emailType?: "newsletter" | "event" | "opportunity" | "announcement";
+ *   senderKey?: "newsletter" | "event" | "opportunity" | "announcement";
  * }
  */
 export async function POST(request: NextRequest) {
@@ -49,6 +80,8 @@ export async function POST(request: NextRequest) {
       subject?: string;
       body?: string;
       recipients?: Array<{ email: string; name?: string }>;
+      emailType?: string;
+      senderKey?: string;
     };
 
     try {
@@ -60,7 +93,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { subject, body: bodyTemplate, recipients } = payload;
+    const { subject, body: bodyTemplate, recipients, emailType, senderKey } = payload;
+
+    // Validate emailType / senderKey if provided
+    if (senderKey && !VALID_EMAIL_TYPES.includes(senderKey as EmailType)) {
+      return NextResponse.json(
+        { success: false, message: `Invalid senderKey. Must be one of: ${VALID_EMAIL_TYPES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    if (emailType && !VALID_EMAIL_TYPES.includes(emailType as EmailType)) {
+      return NextResponse.json(
+        { success: false, message: `Invalid emailType. Must be one of: ${VALID_EMAIL_TYPES.join(", ")}` },
+        { status: 400 }
+      );
+    }
 
     if (!subject?.trim()) {
       return NextResponse.json(
@@ -105,8 +152,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fromAddr =
-      process.env.RESEND_FROM || "DSSA <no-reply@bluehen-dssa.org>";
+    const fromAddr = resolveFromAddress(senderKey, emailType);
 
     // ── Send to each recipient ─────────────────────────────────────────────
     const results: Array<{

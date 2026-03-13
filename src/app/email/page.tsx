@@ -8,6 +8,21 @@ import { useAuth } from "@/contexts/AuthContext";
 // ── Types matching the API / uddssaMailer ─────────────────────────────────────
 
 type ContentMode = "manual" | "ai_polish" | "ai_draft";
+type EmailType = "newsletter" | "event" | "opportunity" | "announcement";
+
+const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
+  newsletter: "Newsletter",
+  event: "Event",
+  opportunity: "Opportunity",
+  announcement: "Announcement",
+};
+
+const SENDER_LABELS: Record<EmailType, string> = {
+  newsletter: "DSSA Newsletter",
+  event: "DSSA Events",
+  opportunity: "DSSA Opportunities",
+  announcement: "DSSA Announcements",
+};
 
 interface AiDraftInput {
   type: string;
@@ -76,6 +91,11 @@ export default function EmailPage() {
   // ── Form state ───────────────────────────────────────────────────────────
   const [contentMode, setContentMode] = useState<ContentMode>("ai_draft");
   const [tone, setTone] = useState<string>("friendly-professional");
+
+  // Email type & sender
+  const [emailType, setEmailType] = useState<EmailType>("newsletter");
+  const [senderOverride, setSenderOverride] = useState<EmailType | "">("");
+  const effectiveSender = senderOverride || emailType;
 
   // manual / ai_polish input
   const [inputSubject, setInputSubject] = useState("");
@@ -175,6 +195,8 @@ export default function EmailPage() {
           subject: generatedSubject,
           body: generatedBody,
           recipients,
+          emailType,
+          senderKey: senderOverride || undefined,
         }),
       });
       const data = await res.json();
@@ -187,10 +209,13 @@ export default function EmailPage() {
     } finally {
       setIsSending(false);
     }
-  }, [generatedSubject, generatedBody, recipientsText]);
+  }, [generatedSubject, generatedBody, recipientsText, emailType, senderOverride]);
 
   const updateDraftField = (field: keyof AiDraftInput, value: string) => {
     setDraftInput((prev) => ({ ...prev, [field]: value }));
+    if (field === "type" && (value === "event" || value === "opportunity" || value === "announcement")) {
+      setEmailType(value);
+    }
   };
 
   // ── Render guards ────────────────────────────────────────────────────────
@@ -290,6 +315,75 @@ export default function EmailPage() {
               </select>
             </div>
           )}
+        </section>
+
+        {/* ── Email type + Sender ─────────────────────────────────────── */}
+        <section className="bg-white p-6 rounded-lg shadow-md space-y-4">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Email type &amp; sender
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="emailType"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Email type
+              </label>
+              <select
+                id="emailType"
+                value={emailType}
+                onChange={(e) => {
+                  const val = e.target.value as EmailType;
+                  setEmailType(val);
+                  setSenderOverride("");
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 focus:ring-2 focus:ring-blue-primary focus:border-blue-primary"
+              >
+                {(Object.keys(EMAIL_TYPE_LABELS) as EmailType[]).map((t) => (
+                  <option key={t} value={t}>
+                    {EMAIL_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Determines the default sender address.
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="senderOverride"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Send from
+              </label>
+              <select
+                id="senderOverride"
+                value={senderOverride}
+                onChange={(e) =>
+                  setSenderOverride(e.target.value as EmailType | "")
+                }
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 focus:ring-2 focus:ring-blue-primary focus:border-blue-primary"
+              >
+                <option value="">
+                  Auto ({SENDER_LABELS[emailType]})
+                </option>
+                {(Object.keys(SENDER_LABELS) as EmailType[]).map((k) => (
+                  <option key={k} value={k}>
+                    {SENDER_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Override the sender address if needed. Sending as:{" "}
+                <span className="font-medium text-gray-600">
+                  {SENDER_LABELS[effectiveSender]}
+                </span>
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* ── Step 2: Input fields (mode-dependent) ───────────────────── */}
