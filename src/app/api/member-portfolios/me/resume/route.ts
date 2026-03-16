@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
         resume_size: file.size,
       })
       .eq('user_id', user.id)
-      .in('status', ['draft', 'rejected'])
       .select('id')
       .single();
 
@@ -132,7 +131,6 @@ export async function DELETE() {
         resume_size: null,
       })
       .eq('user_id', user.id)
-      .in('status', ['draft', 'rejected'])
       .select('id')
       .single();
 

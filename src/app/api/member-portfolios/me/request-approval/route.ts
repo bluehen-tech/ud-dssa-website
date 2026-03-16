@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 
-/** POST /api/member-portfolios/me/request-approval — call request_portfolio_approval() RPC */
+/** POST /api/member-portfolios/me/request-approval — publish portfolio directly */
 export async function POST() {
   try {
     const supabase = createClient();
@@ -14,14 +14,14 @@ export async function POST() {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { error } = await supabase.rpc('request_portfolio_approval');
+    const { error } = await supabase.rpc('publish_portfolio');
 
     if (error) {
-      console.error('request_portfolio_approval RPC error:', error);
+      console.error('publish_portfolio RPC error:', error);
       return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: 'Submitted for approval' });
+    return NextResponse.json({ success: true, message: 'Portfolio published' });
   } catch (err) {
     console.error('POST /api/member-portfolios/me/request-approval:', err);
     return NextResponse.json({ success: false, message: 'An unexpected error occurred' }, { status: 500 });

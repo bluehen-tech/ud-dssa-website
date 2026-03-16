@@ -37,7 +37,7 @@ function GitHubStars() {
       href="https://github.com/bluehen-tech/ud-dssa-website"
       target="_blank"
       rel="noreferrer"
-      className="hidden sm:inline-flex h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+      className="hidden xl:inline-flex h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
       title="GitHub"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="currentColor">
@@ -140,8 +140,8 @@ export default function Header() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-bold text-blue-primary leading-tight">
-                    <span className="md:hidden">DSSA @ UD</span>
-                    <span className="hidden md:inline">DSSA @ University of Delaware</span>
+                    <span className="inline lg:hidden">DSSA @ UD</span>
+                    <span className="hidden lg:inline">DSSA @ University of Delaware</span>
                   </span>
                   <span className="text-xs text-gray-500 leading-tight">bluehen-dssa.org</span>
                 </div>
@@ -162,11 +162,6 @@ export default function Header() {
               <Link href="/members" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
                 Members
               </Link>
-              {isAdmin && (
-                <Link href="/admin/portfolios" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-primary">
-                  Portfolios
-                </Link>
-              )}
 
               {/* More dropdown (Contacts always, Email admin-only) */}
               <MoreDropdown isAdmin={isAdmin} />
@@ -261,15 +256,6 @@ export default function Header() {
             >
               Members
             </Link>
-            {isAdmin && (
-              <Link 
-                href="/admin/portfolios" 
-                onClick={() => setIsMenuOpen(false)}
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-primary hover:text-blue-primary"
-              >
-                Portfolios
-              </Link>
-            )}
 
             {/* Mobile "More" section */}
             <div className="pt-2">
