@@ -42,7 +42,7 @@ export async function GET() {
   }
 }
 
-/** PATCH /api/member-portfolios/me — update current user's portfolio (content only, draft/rejected only) */
+/** PATCH /api/member-portfolios/me — update current user's portfolio content */
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = createClient();
@@ -71,7 +71,6 @@ export async function PATCH(request: NextRequest) {
       .from('member_portfolios')
       .update(update)
       .eq('user_id', user.id)
-      .in('status', ['draft', 'rejected'])
       .select()
       .single();
 
@@ -81,7 +80,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (!row) {
-      return NextResponse.json({ success: false, message: 'Portfolio not found or not editable (must be draft or rejected)' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Portfolio not found or not editable' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, portfolio: row as MemberPortfolioRow });

@@ -3,22 +3,36 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 import type { MemberPortfolio } from '@/types/member';
 
+interface PortfolioApiResponse {
+  success: boolean;
+  message?: string;
+  portfolio?: MemberPortfolio;
+  status?: string;
+}
+
 export default function MemberDetailPage() {
+  const { isAdmin } = useAuth();
   const params = useParams();
   const id = params?.id as string | undefined;
   const [portfolio, setPortfolio] = useState<MemberPortfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     fetch(`/api/member-portfolios/${id}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: PortfolioApiResponse) => {
         if (data.success && data.portfolio) {
           setPortfolio(data.portfolio);
+          setStatus(data.status || 'published');
         } else {
           setError('Portfolio not found');
         }
@@ -26,6 +40,37 @@ export default function MemberDetailPage() {
       .catch(() => setError('Failed to load'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const rejectPortfolio = async () => {
+    if (!id || !isAdmin) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setRejectError('Rejection reason is required.');
+      return;
+    }
+
+    setRejectError(null);
+    setRejecting(true);
+    try {
+      const res = await fetch(`/api/member-portfolios/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rejection_reason: reason }),
+      });
+      const data: PortfolioApiResponse = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to reject portfolio');
+      }
+
+      setStatus('rejected');
+      setRejectReason('');
+      setError('Portfolio rejected successfully. It will no longer appear in the public members list.');
+    } catch (e) {
+      setRejectError(e instanceof Error ? e.message : 'Failed to reject portfolio');
+    } finally {
+      setRejecting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -330,6 +375,39 @@ export default function MemberDetailPage() {
                   </a>
                 )}
               </div>
+            </section>
+          )}
+
+          {isAdmin && (
+            <section className="pt-6 mt-6 border-t border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Admin Controls</h2>
+              {status === 'published' ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-700">
+                    Reject this portfolio to remove it from the public members page.
+                  </p>
+                  <textarea
+                    rows={3}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Rejection reason (required)"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                  {rejectError && <p className="text-sm text-red-600">{rejectError}</p>}
+                  <button
+                    type="button"
+                    onClick={rejectPortfolio}
+                    disabled={rejecting || !rejectReason.trim()}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {rejecting ? 'Rejecting...' : 'Reject Portfolio'}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  This portfolio is currently <span className="font-medium">{status || 'not published'}</span> and cannot be rejected.
+                </p>
+              )}
             </section>
           )}
         </div>

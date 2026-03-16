@@ -193,6 +193,173 @@ const initialFormState: FormState = {
   resume_size: '',
 };
 
+function buildPreviewPortfolio(formData: FormState, existingId: string | null, userEmail?: string): MemberPortfolio {
+  const experience = formData.experience
+    .map((item) => ({
+      title: item.title.trim(),
+      organization: item.organization.trim(),
+      startDate: item.startDate.trim(),
+      endDate: item.endDate.trim() || undefined,
+      location: item.location.trim() || undefined,
+      responsibilities: splitLines(item.responsibilities),
+      achievements: splitLines(item.achievements),
+    }))
+    .filter((item) => item.title && item.organization);
+
+  const education = formData.education
+    .map((item) => ({
+      degree: item.degree.trim(),
+      institution: item.institution.trim(),
+      startYear: item.startYear ? Number(item.startYear) : 0,
+      endYear: item.endYear ? Number(item.endYear) : 0,
+      fieldOfStudy: item.fieldOfStudy.trim() || undefined,
+      location: item.location.trim() || undefined,
+      gpa: item.gpa ? Number(item.gpa) : undefined,
+      honors: splitLines(item.honors),
+    }))
+    .filter((item) => item.degree && item.institution && item.startYear && item.endYear);
+
+  const projects = formData.projects
+    .map((item) => ({
+      title: item.title.trim(),
+      description: item.description.trim(),
+      technologies: splitLines(item.technologies),
+      githubUrl: item.githubUrl.trim() || undefined,
+      liveUrl: item.liveUrl.trim() || undefined,
+    }))
+    .filter((item) => item.title && item.description);
+
+  const achievements = formData.achievements
+    .map((item) => ({
+      title: item.title.trim(),
+      type: item.type,
+      organization: item.organization.trim() || undefined,
+      date: item.date.trim() || undefined,
+      description: item.description.trim() || undefined,
+      link: item.link.trim() || undefined,
+    }))
+    .filter((item) => item.title);
+
+  return {
+    id: existingId || 'preview',
+    role: formData.role,
+    position: formData.position.trim() || undefined,
+    name: formData.name.trim() || 'Untitled',
+    email: userEmail || '',
+    bio: formData.bio.trim(),
+    tagline: formData.tagline.trim() || undefined,
+    major: formData.major.trim() || undefined,
+    graduationDate: formData.graduation_date.trim() || undefined,
+    profileImageUrl: formData.profile_image_url.trim() || undefined,
+    resumeUrl: formData.resume_path ? getResumePublicUrlFromPath(formData.resume_path) : undefined,
+    resumeFileName: formData.resume_filename || undefined,
+    resumeUploadedAt: formData.resume_updated_at || undefined,
+    skills: splitLines(formData.skills).length ? [{ items: splitLines(formData.skills) }] : [],
+    experience,
+    education,
+    projects,
+    leadershipActivities: splitLines(formData.leadership_activities),
+    coursework: splitLines(formData.coursework),
+    toolsStack: {
+      languages: splitLines(formData.tools_languages),
+      mlData: splitLines(formData.tools_ml_data),
+      biAnalytics: splitLines(formData.tools_bi_analytics),
+      cloudDevOps: splitLines(formData.tools_cloud_devops),
+    },
+    careerInterests: {
+      roles: splitLines(formData.career_roles),
+      domains: splitLines(formData.career_domains),
+      locations: splitLines(formData.career_locations),
+      employmentTypes: splitLines(formData.career_employment_types),
+    },
+    availability: {
+      startTerm: formData.availability_start_term.trim() || undefined,
+      internshipSeason: formData.availability_internship_season.trim() || undefined,
+      timezone: formData.availability_timezone.trim() || undefined,
+    },
+    portfolioHighlights: splitLines(formData.portfolio_highlights),
+    contactPreferences: {
+      preferredMethod: formData.contact_preferred_method.trim() || undefined,
+      allowPublicEmail: formData.contact_allow_public_email,
+      allowPublicResume: formData.contact_allow_public_resume,
+    },
+    links: {
+      linkedin: formData.linkedin.trim() || undefined,
+      github: formData.github.trim() || undefined,
+      website: formData.website.trim() || undefined,
+      email: formData.contact_allow_public_email ? userEmail || undefined : undefined,
+    },
+    achievements,
+    interests: [],
+  };
+}
+
+function PreviewCard({ portfolio }: { portfolio: MemberPortfolio }) {
+  return (
+    <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
+      <div className="flex flex-col items-center text-center mb-6">
+        {portfolio.profileImageUrl ? (
+          <img src={portfolio.profileImageUrl} alt={portfolio.name} className="w-28 h-28 rounded-full object-cover mb-4" />
+        ) : (
+          <div className="w-28 h-28 rounded-full bg-blue-100 text-blue-primary font-bold text-4xl flex items-center justify-center mb-4">
+            {portfolio.name?.charAt(0)?.toUpperCase() || 'M'}
+          </div>
+        )}
+        <h2 className="text-3xl font-bold text-blue-primary">{portfolio.name}</h2>
+        {portfolio.position && <p className="text-lg text-gray-700 mt-1">{portfolio.position}</p>}
+        {portfolio.tagline && <p className="text-gray-600 mt-2">{portfolio.tagline}</p>}
+      </div>
+
+      {portfolio.bio && (
+        <section className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">About</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{portfolio.bio}</p>
+        </section>
+      )}
+
+      {portfolio.skills && portfolio.skills.length > 0 && (
+        <section className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Skills</h3>
+          <div className="flex flex-wrap gap-2">
+            {portfolio.skills.flatMap((group, i) =>
+              (group.items || []).map((skill, j) => (
+                <span key={`${i}-${j}`} className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
+                  {skill}
+                </span>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+
+      {portfolio.projects && portfolio.projects.length > 0 && (
+        <section className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Projects</h3>
+          <div className="space-y-3">
+            {portfolio.projects.map((project, index) => (
+              <div key={`${project.title}-${index}`} className="border border-gray-200 rounded-lg p-4">
+                <p className="font-semibold text-gray-900">{project.title}</p>
+                <p className="text-sm text-gray-700 mt-1">{project.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {portfolio.links && (portfolio.links.linkedin || portfolio.links.github || portfolio.links.website) && (
+        <section className="pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect</h3>
+          <div className="flex flex-wrap gap-4">
+            {portfolio.links.linkedin && <span className="text-blue-600">LinkedIn</span>}
+            {portfolio.links.github && <span className="text-gray-800">GitHub</span>}
+            {portfolio.links.website && <span className="text-blue-600">Website</span>}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function splitLines(input: string) {
   return input
     .split(/\n|,/)
@@ -269,15 +436,19 @@ export default function MyPortfolioPage() {
   const [uploadPhotoError, setUploadPhotoError] = useState<string | null>(null);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [uploadResumeError, setUploadResumeError] = useState<string | null>(null);
-  const [startingEdit, setStartingEdit] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const userId = session?.user?.id;
   const status = portfolio?.status;
-  const canEdit = !portfolio || status === 'draft' || status === 'rejected';
-  const isPending = status === 'pending';
+  const canEdit = !portfolio || status === 'draft' || status === 'rejected' || status === 'published';
   const isPublished = status === 'published';
+
+  const previewPortfolio = useMemo(
+    () => buildPreviewPortfolio(formData, portfolio?.id ?? null, session?.user?.email),
+    [formData, portfolio?.id, session?.user?.email]
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -404,7 +575,7 @@ export default function MyPortfolioPage() {
         resume_size: data.portfolio.resume_size ? String(data.portfolio.resume_size) : '',
       };
 
-      if (data.portfolio.status === 'pending' || data.portfolio.status === 'published') {
+      if (data.portfolio.status === 'pending') {
         if (userId) clearLocalDraft(userId);
         setFormData(serverFormData);
         return;
@@ -815,7 +986,7 @@ export default function MyPortfolioPage() {
 
     const validation = validateForm();
     if (!validation.isValid) {
-      setError(validation.firstError || 'Please fix validation errors before submitting for approval.');
+      setError(validation.firstError || 'Please fix validation errors before publishing.');
       return;
     }
 
@@ -829,39 +1000,21 @@ export default function MyPortfolioPage() {
         body: JSON.stringify(buildPayload()),
       });
       const saveData = await saveRes.json();
-      if (!saveRes.ok) throw new Error(saveData.message || 'Failed to save before submit');
+      if (!saveRes.ok) throw new Error(saveData.message || 'Failed to save before publishing');
 
       const submitRes = await fetch('/api/member-portfolios/me/request-approval', {
         method: 'POST',
       });
       const submitData = await submitRes.json();
-      if (!submitRes.ok) throw new Error(submitData.message || 'Failed to submit for approval');
+      if (!submitRes.ok) throw new Error(submitData.message || 'Failed to publish portfolio');
 
       if (userId) clearLocalDraft(userId);
 
       await fetchMyPortfolio();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to submit for approval');
+      setError(e instanceof Error ? e.message : 'Failed to publish portfolio');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const startEditingPublished = async () => {
-    if (!portfolio || !isPublished) return;
-
-    setStartingEdit(true);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/member-portfolios/me/start-editing', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to switch portfolio to draft');
-      await fetchMyPortfolio();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to switch portfolio to draft');
-    } finally {
-      setStartingEdit(false);
     }
   };
 
@@ -891,15 +1044,6 @@ export default function MyPortfolioPage() {
           </div>
         )}
 
-        {portfolio && isPending && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="font-medium text-amber-900">Pending approval</p>
-            <p className="text-sm text-amber-800 mt-1">
-              Your portfolio has been submitted. You can edit again if it is rejected.
-            </p>
-          </div>
-        )}
-
         {portfolio?.status === 'rejected' && portfolio.rejection_reason && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="font-medium text-red-900">Reviewer feedback</p>
@@ -911,7 +1055,7 @@ export default function MyPortfolioPage() {
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="font-medium text-green-900">Published</p>
             <p className="text-sm text-green-800 mt-1">
-              Your portfolio is live on{' '}
+              Your portfolio is live and editable. Updates are visible immediately on{' '}
               <Link href="/members" className="underline">
                 Members
               </Link>
@@ -928,6 +1072,30 @@ export default function MyPortfolioPage() {
               </h2>
               <span className="text-sm text-gray-600">{completionPercent}% complete</span>
             </div>
+            <div className="mb-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                className={`px-3 py-1.5 text-sm rounded-md border ${
+                  !showPreview
+                    ? 'bg-blue-primary text-white border-blue-primary'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className={`px-3 py-1.5 text-sm rounded-md border ${
+                  showPreview
+                    ? 'bg-blue-primary text-white border-blue-primary'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
             <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-primary transition-all"
@@ -939,6 +1107,17 @@ export default function MyPortfolioPage() {
             )}
           </div>
 
+          {showPreview && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Live preview of how your public page will look after publishing.
+              </p>
+              <PreviewCard portfolio={previewPortfolio} />
+            </div>
+          )}
+
+          {!showPreview && (
+          <>
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Basic Info</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1980,6 +2159,9 @@ export default function MyPortfolioPage() {
             </div>
           </section>
 
+          </>
+          )}
+
           {canEdit && (
             <div className="flex flex-wrap gap-3">
               <button
@@ -1998,29 +2180,16 @@ export default function MyPortfolioPage() {
                   disabled={saving || uploadingPhoto || uploadingResume || Boolean(publishReadinessError)}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                 >
-                  {saving ? 'Submitting...' : status === 'rejected' ? 'Resubmit for approval' : 'Publish (request approval)'}
+                  {saving ? 'Publishing...' : status === 'rejected' ? 'Republish portfolio' : 'Publish portfolio'}
                 </button>
               )}
             </div>
           )}
 
           {portfolio && isPublished && (
-            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-              <p className="text-sm text-gray-700">
-                Your portfolio is currently read-only because it is published.
-              </p>
-              <button
-                type="button"
-                onClick={startEditingPublished}
-                disabled={startingEdit || saving || uploadingPhoto || uploadingResume}
-                className="mt-3 px-4 py-2 bg-blue-primary text-white text-sm rounded-md hover:bg-blue-800 disabled:opacity-50"
-              >
-                {startingEdit ? 'Preparing draft...' : 'Edit and resubmit for approval'}
-              </button>
-              <Link href={`/members/${portfolio.id}`} className="text-sm text-blue-primary hover:underline mt-2 inline-block">
-                View public page →
-              </Link>
-            </div>
+            <Link href={`/members/${portfolio.id}`} className="text-sm text-blue-primary hover:underline inline-block">
+              View public page →
+            </Link>
           )}
         </div>
       </div>

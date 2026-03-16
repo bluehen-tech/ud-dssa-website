@@ -56,7 +56,7 @@ export async function POST(
         approved_by: null,
       })
       .eq('id', id)
-      .eq('status', 'pending')
+      .eq('status', 'published')
       .select()
       .single();
 
@@ -66,7 +66,7 @@ export async function POST(
     }
 
     if (!row) {
-      return NextResponse.json({ success: false, message: 'Portfolio not found or not pending' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Portfolio not found or not published' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, portfolio: row });
