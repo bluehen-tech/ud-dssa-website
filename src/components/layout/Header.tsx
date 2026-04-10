@@ -68,9 +68,9 @@ function MoreDropdown({
 
       <div
         className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition
-                   absolute left-0 top-full z-50 mt-2 min-w-44 rounded-md border bg-white shadow-lg"
+                   absolute left-0 top-full z-50 pt-2 min-w-44"
       >
-        <div className="py-1">
+        <div className="rounded-md border bg-white shadow-lg py-1">
           <Link
             href="/contacts"
             onClick={closeMenu}
