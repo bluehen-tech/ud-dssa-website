@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import RecipientPicker from "@/components/email/RecipientPicker";
 
 // ── Types matching the API / uddssaMailer ─────────────────────────────────────
 
@@ -71,6 +72,17 @@ const EMPTY_DRAFT: AiDraftInput = {
   extras: "",
 };
 
+const STAGE_EXTRAS: Record<string, string> = {
+  "save-the-date":
+    "This is an early save-the-date announcement. Keep it brief and exciting -- just the title, date, and a teaser.",
+  "full-details":
+    "This is the full event announcement with all details.",
+  reminder:
+    "This is a reminder email for an upcoming event. Create urgency -- the event is soon!",
+  "last-chance":
+    "This is a last-chance/day-of email. Strong urgency, FOMO, final call to attend.",
+};
+
 function personalise(template: string, name = "John"): string {
   return template.replace(/\{name\}/g, name);
 }
@@ -78,8 +90,27 @@ function personalise(template: string, name = "John"): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function EmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-primary mx-auto mb-4" />
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <EmailPageContent />
+    </Suspense>
+  );
+}
+
+function EmailPageContent() {
   const { session, isAdmin, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillApplied = useRef(false);
 
   // ── Auth gate ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -217,6 +248,45 @@ export default function EmailPage() {
       setEmailType(value);
     }
   };
+
+  // ── Pre-populate from query params (e.g. from Events page) ─────────────
+  useEffect(() => {
+    if (prefillApplied.current) return;
+    const mode = searchParams.get("mode");
+    if (!mode) return;
+
+    prefillApplied.current = true;
+
+    if (mode === "ai_draft" || mode === "ai_polish" || mode === "manual") {
+      setContentMode(mode);
+    }
+
+    const et = searchParams.get("emailType");
+    if (et === "event" || et === "newsletter" || et === "opportunity" || et === "announcement") {
+      setEmailType(et);
+    }
+
+    const topic = searchParams.get("topic");
+    const details = searchParams.get("details");
+    const audience = searchParams.get("audience");
+    const cta = searchParams.get("cta");
+    const stage = searchParams.get("stage");
+
+    const draftType = et || "event";
+    setDraftInput({
+      type: draftType,
+      topic: topic || "",
+      details: details || "",
+      audience: audience || "",
+      cta: cta || "",
+      contact: "",
+      extras: stage && STAGE_EXTRAS[stage] ? STAGE_EXTRAS[stage] : "",
+    });
+
+    if (draftType === "event" || draftType === "opportunity" || draftType === "announcement") {
+      setEmailType(draftType as EmailType);
+    }
+  }, [searchParams]);
 
   // ── Render guards ────────────────────────────────────────────────────────
 
@@ -628,28 +698,10 @@ export default function EmailPage() {
 
             {/* Recipients + Send */}
             <div className="border-t border-gray-200 pt-4 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-800">
-                4. Recipients
-              </h3>
-              <div>
-                <label
-                  htmlFor="recipients"
-                  className="block text-sm text-gray-600 mb-1"
-                >
-                  One email per line. Optionally use{" "}
-                  <code className="bg-gray-100 px-1 rounded text-xs">
-                    Name &lt;email@example.com&gt;
-                  </code>{" "}
-                  format for personalised greetings.
-                </label>
-                <textarea
-                  id="recipients"
-                  rows={4}
-                  value={recipientsText}
-                  onChange={(e) => setRecipientsText(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 focus:ring-2 focus:ring-blue-primary focus:border-blue-primary font-mono text-sm"
-                />
-              </div>
+              <RecipientPicker
+                recipientsText={recipientsText}
+                onChange={setRecipientsText}
+              />
 
               <div className="flex items-center gap-4">
                 <button
