@@ -50,6 +50,15 @@ function buildComposeUrl(event: Event, stage: DripStage): string {
   return `/email?${params.toString()}`;
 }
 
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+$/, '')
+    .replace(/^-+/, '');
+}
+
 export default function EventsPage() {
   const { session, isAdmin, isLoading } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
@@ -60,10 +69,12 @@ export default function EventsPage() {
   // Form state
   const [formData, setFormData] = useState({
     title: '',
+    slug: '',
     description: '',
     event_date: '',
     event_url: '',
   });
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedStages, setSelectedStages] = useState<Record<string, DripStage>>({});
 
@@ -159,6 +170,7 @@ export default function EventsPage() {
         .from('events')
         .insert({
           title: formData.title,
+          slug: formData.slug || generateSlug(formData.title),
           description: formData.description,
           event_date: new Date(formData.event_date).toISOString(),
           event_url: formData.event_url || null,
@@ -171,10 +183,12 @@ export default function EventsPage() {
       // Reset form
       setFormData({
         title: '',
+        slug: '',
         description: '',
         event_date: '',
         event_url: '',
       });
+      setSlugManuallyEdited(false);
       setSelectedFile(null);
       setShowAddForm(false);
       
@@ -289,10 +303,39 @@ export default function EventsPage() {
                   type="text"
                   required
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    setFormData({
+                      ...formData,
+                      title: newTitle,
+                      ...(slugManuallyEdited ? {} : { slug: generateSlug(newTitle) }),
+                    });
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent"
                   placeholder="e.g., DSSA Fall Kickoff Event"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Feedback URL Slug
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500 shrink-0">/feedback/</span>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => {
+                      setSlugManuallyEdited(true);
+                      setFormData({ ...formData, slug: generateSlug(e.target.value) });
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent font-mono text-sm"
+                    placeholder="auto-generated-from-title"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-generated from title. Edit to customize the feedback URL.
+                </p>
               </div>
 
               <div>
@@ -369,10 +412,12 @@ export default function EventsPage() {
                     setShowAddForm(false);
                     setFormData({
                       title: '',
+                      slug: '',
                       description: '',
                       event_date: '',
                       event_url: '',
                     });
+                    setSlugManuallyEdited(false);
                     setSelectedFile(null);
                   }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-colors duration-200"
@@ -480,6 +525,33 @@ export default function EventsPage() {
                           Compose Email
                         </Link>
                       </div>
+                      {event.slug && (
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Feedback Form
+                          </label>
+                          <Link
+                            href={`/feedback/${event.slug}`}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors duration-200"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Feedback Link
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = `${window.location.origin}/feedback/${event.slug}`;
+                              navigator.clipboard.writeText(url);
+                              alert(`Copied: ${url}`);
+                            }}
+                            className="text-xs text-gray-500 hover:text-blue-primary underline"
+                          >
+                            Copy URL
+                          </button>
+                        </div>
+                      )}
                       <button
                         onClick={() => handleDelete(event.id, event.flyer_url)}
                         className="px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-md hover:bg-red-200 transition-colors duration-200"

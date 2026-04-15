@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ContactFormData, UDGradStudentForm, IndustryAcademicForm, UndergraduateStudentForm, OtherUniversityStudentForm } from '@/types/contact';
 import { dataScienceClubs } from '@/data/clubs';
 
@@ -16,6 +16,25 @@ export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const prefill: Partial<ContactFormData> = {};
+    const validTypes = ['ud-grad-student', 'undergraduate-student', 'other-university-student', 'industry-academic-friend'] as const;
+    const ut = params.get('userType');
+    if (ut && (validTypes as readonly string[]).includes(ut)) {
+      prefill.userType = ut as ContactFormData['userType'];
+    }
+    const fn = params.get('fullName');
+    if (fn) prefill.fullName = fn;
+    const em = params.get('email');
+    if (em) prefill.email = em;
+
+    if (Object.keys(prefill).length > 0) {
+      setFormData((prev) => ({ ...prev, ...prefill }));
+    }
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};

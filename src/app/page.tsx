@@ -123,6 +123,12 @@ export default function Home() {
     }, 100);
   };
 
+  useEffect(() => {
+    if (isLoaded && window.location.hash === '#contact-form') {
+      scrollToForm();
+    }
+  }, [isLoaded]);
+
   const getTypeColor = (type: OpportunityType): string => {
     const colors: Record<OpportunityType, string> = {
       job: 'bg-green-100 text-green-800 border-green-200',
@@ -410,7 +416,7 @@ export default function Home() {
         )}
 
         {/* Call to Action */}
-        <div className={`text-center mb-6 transition-all duration-1000 delay-1100 ${
+        <div id="contact-form" className={`scroll-mt-20 text-center mb-6 transition-all duration-1000 delay-1100 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
@@ -428,7 +434,7 @@ export default function Home() {
         </div>
 
         {/* Contact Form */}
-        <div id="contact-form" className={`transition-all duration-1000 delay-1300 ${
+        <div className={`transition-all duration-1000 delay-1300 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
         <ContactForm />
