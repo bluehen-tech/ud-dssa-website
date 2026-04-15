@@ -20,7 +20,7 @@ interface EventFeedbackFormProps {
 function StarIcon({ filled, hovered }: { filled: boolean; hovered: boolean }) {
   return (
     <svg
-      className={`w-10 h-10 transition-all duration-150 ${
+      className={`w-8 h-8 md:w-10 md:h-10 transition-all duration-150 ${
         filled
           ? 'text-yellow-400 drop-shadow-sm'
           : hovered
@@ -303,11 +303,11 @@ export default function EventFeedbackForm({ event }: EventFeedbackFormProps) {
               makes a valuable contribution to the data science community at UD.&rdquo;{' '}
               <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
-              <span className="text-xs text-gray-500 w-16 text-center leading-tight">
+            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3 md:p-4 gap-1">
+              <span className="text-[10px] md:text-xs text-gray-500 w-12 md:w-16 text-center leading-tight shrink-0">
                 Strongly Disagree
               </span>
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 md:gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -329,7 +329,7 @@ export default function EventFeedbackForm({ event }: EventFeedbackFormProps) {
                   </button>
                 ))}
               </div>
-              <span className="text-xs text-gray-500 w-16 text-center leading-tight">
+              <span className="text-[10px] md:text-xs text-gray-500 w-12 md:w-16 text-center leading-tight shrink-0">
                 Strongly Agree
               </span>
             </div>
