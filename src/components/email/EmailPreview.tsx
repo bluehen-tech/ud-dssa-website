@@ -74,28 +74,27 @@ export default function EmailPreview({
           className="text-center"
           style={{
             background: "#0d1031",
-            padding: "0 0 12px",
+            padding: "32px 24px 24px",
+            borderRadius: "12px 12px 0 0",
           }}
         >
-          <img
-            src="/images/heroWatermark.jpg"
-            alt="DSSA - Data Science Student Association @ University of Delaware"
-            style={{
-              display: "block",
-              width: "100%",
-              maxWidth: 600,
-              height: "auto",
-              borderRadius: "12px 12px 0 0",
-            }}
-          />
-          <p
-            className="text-sm font-bold"
-            style={{ color: "#D4A020", margin: "8px 0 0", letterSpacing: "0.5px" }}
-          >
-            {senderLabel}
+          <p style={{ margin: 0, fontSize: 42, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
+            DSSA
           </p>
-          <p style={{ margin: "4px 0 0", fontSize: 12 }}>
-            <a href="https://bluehen-dssa.org" style={{ color: "rgba(255,255,255,0.9)", textDecoration: "none" }}>
+          <div style={{ width: 80, height: 3, background: "#D4A020", margin: "8px auto" }} />
+          <p style={{ margin: "8px 0 0", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.85)", letterSpacing: "1.5px", textTransform: "uppercase" as const }}>
+            Data Science Student Association
+          </p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+            University of Delaware
+          </p>
+          <div style={{ marginTop: 16 }}>
+            <span style={{ display: "inline-block", background: "#D4A020", borderRadius: 4, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: "#0d1031", letterSpacing: "0.5px" }}>
+              {senderLabel}
+            </span>
+          </div>
+          <p style={{ margin: "10px 0 0", fontSize: 12 }}>
+            <a href="https://bluehen-dssa.org" style={{ color: "rgba(255,255,255,0.75)", textDecoration: "none" }}>
               bluehen-dssa.org
             </a>
           </p>

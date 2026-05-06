@@ -29,8 +29,6 @@ const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
 
 const EMAIL_TEMPLATE_PATH = join(process.cwd(), "src", "emails", "udssa-recruitment-email.html");
 
-const LOGO_URL = "https://ud-dssa-website.vercel.app/images/heroWatermark.jpg";
-
 /** Structured intake fields used in ai_draft mode (mirrors the CLI prompts). */
 export interface AiDraftInput {
   type: string;
@@ -336,7 +334,6 @@ export async function buildEmailHtml({
     subject,
     bodyHtml,
     unsubscribeUrl,
-    logoUrl: LOGO_URL,
   });
 }
 
