@@ -31,8 +31,6 @@ type Notice = {
   text: string;
 } | null;
 
-type ComposerMode = 'write' | 'preview';
-
 type CommunityCommentNode = Omit<CommunityComment, 'replies'> & {
   replies: CommunityCommentNode[];
 };
@@ -180,7 +178,6 @@ export default function CommunityBoard() {
   const [notice, setNotice] = useState<Notice>(null);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [composerMode, setComposerMode] = useState<ComposerMode>('write');
   const [composer, setComposer] = useState(INITIAL_COMPOSER);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [submittingPost, setSubmittingPost] = useState(false);
@@ -222,12 +219,6 @@ export default function CommunityBoard() {
     const timeout = window.setTimeout(fetchPosts, search.trim() ? 300 : 0);
     return () => window.clearTimeout(timeout);
   }, [fetchPosts, search]);
-
-  useEffect(() => {
-    if (session && !authLoading) {
-      setComposerOpen(true);
-    }
-  }, [authLoading, session]);
 
   const requireInteraction = () => {
     if (session) return true;
@@ -430,7 +421,6 @@ export default function CommunityBoard() {
         setPosts((current) => [data.post as CommunityPost, ...current]);
         setComposer(INITIAL_COMPOSER);
         setMediaFile(null);
-        setComposerMode('write');
         setComposerOpen(false);
         setNotice({ tone: 'success', text: 'Post published.' });
       }
@@ -575,39 +565,15 @@ export default function CommunityBoard() {
                         required
                       />
 
-                      <div className="overflow-hidden rounded-lg border border-gray-300">
-                        <div className="flex border-b border-gray-200 bg-gray-50 p-1">
-                          {(['write', 'preview'] as const).map((mode) => (
-                            <button
-                              key={mode}
-                              type="button"
-                              onClick={() => setComposerMode(mode)}
-                              className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize ${
-                                composerMode === mode
-                                  ? 'bg-white text-blue-primary shadow-sm'
-                                  : 'text-gray-600 hover:text-gray-900'
-                              }`}
-                            >
-                              {mode}
-                            </button>
-                          ))}
-                        </div>
-                        {composerMode === 'write' ? (
-                          <textarea
-                            value={composer.content}
-                            onChange={(event) =>
-                              setComposer((value) => ({ ...value, content: event.target.value }))
-                            }
-                            placeholder="Share details, questions, links, or notes..."
-                            className="min-h-[180px] w-full resize-y border-0 px-3 py-3 text-sm text-gray-800 focus:outline-none focus:ring-0"
-                            maxLength={12000}
-                          />
-                        ) : (
-                          <div className="min-h-[180px] px-3 py-3">
-                            <MarkdownPreview content={composer.content} />
-                          </div>
-                        )}
-                      </div>
+                      <textarea
+                        value={composer.content}
+                        onChange={(event) =>
+                          setComposer((value) => ({ ...value, content: event.target.value }))
+                        }
+                        placeholder="Share details, questions, links, or notes..."
+                        className="min-h-[220px] w-full resize-y rounded-lg border border-gray-300 px-3 py-3 text-sm text-gray-800 focus:border-blue-primary focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        maxLength={12000}
+                      />
 
                       <input
                         value={composer.tags}
@@ -935,6 +901,7 @@ function CommentsPanel({ postId, sessionActive, onCommentDelta, onReport }: Comm
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCommentBox, setShowCommentBox] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -989,6 +956,7 @@ function CommentsPanel({ postId, sessionActive, onCommentDelta, onReport }: Comm
           setReplyingTo(null);
         } else {
           setNewComment('');
+          setShowCommentBox(false);
         }
       }
     } catch (submitError) {
@@ -1055,7 +1023,19 @@ function CommentsPanel({ postId, sessionActive, onCommentDelta, onReport }: Comm
         </div>
       )}
 
-      {sessionActive && (
+      {sessionActive && !showCommentBox && (
+        <div className="mb-5">
+          <button
+            type="button"
+            onClick={() => setShowCommentBox(true)}
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:border-blue-primary hover:text-blue-primary"
+          >
+            Add comment
+          </button>
+        </div>
+      )}
+
+      {sessionActive && showCommentBox && (
         <div className="mb-5 rounded-lg border border-gray-200 bg-white p-3">
           <textarea
             value={newComment}
@@ -1063,7 +1043,17 @@ function CommentsPanel({ postId, sessionActive, onCommentDelta, onReport }: Comm
             placeholder="Add a comment"
             className="min-h-[88px] w-full resize-y border-0 text-sm text-gray-800 focus:outline-none focus:ring-0"
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCommentBox(false);
+                setNewComment('');
+              }}
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
             <button
               type="button"
               onClick={() => submitComment(null)}
