@@ -405,7 +405,22 @@ export default function OpportunitiesPage() {
 
   // Determine which opportunities to display (always from Supabase)
   const displayOpportunities = useMemo(() => {
-    return opportunities;
+    // Sort: Active (open deadline) first, then Expired (closed deadline)
+    // Within each group, sort by posted date (newest first)
+    return [...opportunities].sort((a, b) => {
+      const aDeadlinePassed = isDeadlinePassed(a.deadline);
+      const bDeadlinePassed = isDeadlinePassed(b.deadline);
+      
+      // If one is active and one is expired, active comes first
+      if (aDeadlinePassed !== bDeadlinePassed) {
+        return aDeadlinePassed ? 1 : -1;
+      }
+      
+      // If same deadline status, sort by posted date (newest first)
+      const aPostedDate = new Date(a.postedDate).getTime();
+      const bPostedDate = new Date(b.postedDate).getTime();
+      return bPostedDate - aPostedDate;
+    });
   }, [opportunities]);
 
   // Show loading state
