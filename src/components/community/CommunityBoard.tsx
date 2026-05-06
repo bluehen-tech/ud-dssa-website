@@ -451,7 +451,7 @@ export default function CommunityBoard() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold text-blue-primary sm:text-4xl">Community</h1>
+                <h1 className="text-3xl font-bold text-blue-primary sm:text-4xl">DataTalk</h1>
                 {isAdmin && (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                     Admin mode
@@ -668,7 +668,7 @@ export default function CommunityBoard() {
             {loadingPosts ? (
               <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
                 <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-b-2 border-blue-primary" />
-                <p className="text-gray-600">Loading community posts...</p>
+                <p className="text-gray-600">Loading DataTalk posts...</p>
               </div>
             ) : posts.length === 0 ? (
               <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
@@ -698,7 +698,7 @@ export default function CommunityBoard() {
 
           <aside className="space-y-5">
             <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-gray-950">Community Pulse</h2>
+              <h2 className="text-base font-semibold text-gray-950">DataTalk Pulse</h2>
               <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-lg bg-gray-50 p-3">
                   <dt className="text-xs font-medium text-gray-500">Posts</dt>

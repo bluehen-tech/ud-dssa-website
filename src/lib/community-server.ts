@@ -8,7 +8,7 @@ export const COMMUNITY_MEDIA_BUCKET =
 export const COMMUNITY_POST_LIMIT = 60;
 
 export const COMMUNITY_SETUP_REQUIRED_MESSAGE =
-  'Community database tables are not set up yet. Run the SQL in docs/COMMUNITY_SETUP.md in your Supabase SQL Editor, then refresh this page.';
+  'DataTalk database tables are not set up yet. Run the SQL in docs/COMMUNITY_SETUP.md in your Supabase SQL Editor, then refresh this page.';
 
 type SupabaseServerClient = ReturnType<typeof createClient>;
 

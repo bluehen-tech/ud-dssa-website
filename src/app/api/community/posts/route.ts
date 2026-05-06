@@ -78,7 +78,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<CommunityP
           posts: [],
           message: isCommunitySchemaMissingError(error)
             ? COMMUNITY_SETUP_REQUIRED_MESSAGE
-            : 'Failed to load community posts.',
+            : 'Failed to load DataTalk posts.',
         },
         { status: 500 }
       );

@@ -45,7 +45,7 @@ export default function MediaPreview({ mediaUrl, mediaType, mediaName }: MediaPr
       <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
         <img
           src={mediaUrl}
-          alt={mediaName || 'Community post media'}
+          alt={mediaName || 'DataTalk post media'}
           loading="lazy"
           className="max-h-[520px] w-full object-contain"
         />
