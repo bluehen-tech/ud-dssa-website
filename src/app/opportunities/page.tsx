@@ -53,7 +53,7 @@ const defaultFormState: OpportunityFormState = {
 };
 
 export default function OpportunitiesPage() {
-  const { session, isAdmin, isLoading } = useAuth();
+  const { session, isAdmin, hasEmailAccess, isLoading } = useAuth();
   const supabase = createClient();
 
   // Opportunities state
@@ -586,7 +586,7 @@ export default function OpportunitiesPage() {
               <p className="text-sm text-gray-600">
                 <strong>Signed in as:</strong> {userEmail}
               </p>
-              <p className="text-xs text-gray-400 mt-1">{isAdmin ? 'Admin' : 'Member'}</p>
+              <p className="text-xs text-gray-400 mt-1">{isAdmin ? 'Admin' : hasEmailAccess ? 'Email Manager' : 'Member'}</p>
             </div>
           </div>
 

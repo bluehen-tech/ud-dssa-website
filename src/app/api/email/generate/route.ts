@@ -33,16 +33,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check admin flag in profiles table
     const { data: profile } = await supabase
       .from("profiles")
-      .select("admin_flag")
+      .select("admin_flag, email_access_flag")
       .eq("id", user.id)
       .single();
 
-    if (!profile?.admin_flag) {
+    if (!profile?.admin_flag && !profile?.email_access_flag) {
       return NextResponse.json(
-        { success: false, message: "Forbidden – admin access required" },
+        { success: false, message: "Forbidden – admin or email access required" },
         { status: 403 }
       );
     }

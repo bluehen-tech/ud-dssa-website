@@ -51,9 +51,11 @@ function GitHubStars() {
 
 function MoreDropdown({
   isAdmin,
+  hasEmailAccess,
   closeMenu,
 }: {
   isAdmin: boolean;
+  hasEmailAccess: boolean;
   closeMenu?: () => void;
 }) {
   return (
@@ -79,13 +81,23 @@ function MoreDropdown({
             Contacts
           </Link>
 
-          {isAdmin && (
+          {(isAdmin || hasEmailAccess) && (
             <Link
               href="/email"
               onClick={closeMenu}
               className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-primary"
             >
               Email
+            </Link>
+          )}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={closeMenu}
+              className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-primary"
+            >
+              Admin
             </Link>
           )}
         </div>
@@ -96,7 +108,7 @@ function MoreDropdown({
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { session, isAdmin, signOut } = useAuth();
+  const { session, isAdmin, hasEmailAccess, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
@@ -117,9 +129,10 @@ export default function Header() {
 
   const mobileMoreItems = useMemo(() => {
     const items = [{ label: "Contacts", href: "/contacts" }];
-    if (isAdmin) items.push({ label: "Email", href: "/email" });
+    if (isAdmin || hasEmailAccess) items.push({ label: "Email", href: "/email" });
+    if (isAdmin) items.push({ label: "Admin", href: "/admin" });
     return items;
-  }, [isAdmin]);
+  }, [isAdmin, hasEmailAccess]);
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
@@ -167,7 +180,7 @@ export default function Header() {
               </Link>
 
               {/* More dropdown (Contacts always, Email admin-only) */}
-              <MoreDropdown isAdmin={isAdmin} />
+              <MoreDropdown isAdmin={isAdmin} hasEmailAccess={hasEmailAccess} />
             </nav>
           </div>
 
@@ -179,7 +192,7 @@ export default function Header() {
               <>
                 <div className="hidden lg:flex max-w-[180px] flex-col items-end xl:max-w-[220px]">
                   <span className="max-w-full truncate text-sm text-gray-600">{session.user.email}</span>
-                  <span className="text-xs text-gray-400 mt-0.5">{isAdmin ? "Admin" : "Member"}</span>
+                  <span className="text-xs text-gray-400 mt-0.5">{isAdmin ? "Admin" : hasEmailAccess ? "Email Manager" : "Member"}</span>
                 </div>
                 <button
                   onClick={handleLogout}
@@ -298,7 +311,7 @@ export default function Header() {
               <>
                 <div className="block pl-3 pr-4 py-2 text-sm text-gray-600">
                   <div>{session.user.email}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{isAdmin ? "Admin" : "Member"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{isAdmin ? "Admin" : hasEmailAccess ? "Email Manager" : "Member"}</div>
                 </div>
                 <button
                   onClick={handleLogout}

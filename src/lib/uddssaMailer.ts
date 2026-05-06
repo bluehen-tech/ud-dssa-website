@@ -3,15 +3,16 @@
  *
  * TypeScript re-implementation of the CLI logic in uddssa_mailer.py.
  * Supports three content modes:
- *   - manual:    Use supplied subject/body as-is (trim + ensure {name} greeting).
+ *   - manual:    Use supplied subject/body as-is (markdown).
  *   - ai_polish: Send existing subject/body to an AI provider for improvement.
  *   - ai_draft:  Collect structured fields and let AI draft the email from scratch.
  *
- * The AI providers supported are OpenAI and DeepSeek, selected via env var AI_PROVIDER.
+ * The AI generates MARKDOWN which is converted to inline-styled HTML for email.
  */
 
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { marked } from "marked";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,28 +21,30 @@ export type AiProvider = "openai" | "deepseek";
 export type EmailType = "newsletter" | "event" | "opportunity" | "announcement";
 
 const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
-  newsletter: "Newsletter",
-  event: "Events",
-  opportunity: "Opportunities",
-  announcement: "Announcements",
+  newsletter: "DSSA Newsletter",
+  event: "DSSA Events",
+  opportunity: "DSSA Opportunities",
+  announcement: "DSSA Announcements",
 };
 
 const EMAIL_TEMPLATE_PATH = join(process.cwd(), "src", "emails", "udssa-recruitment-email.html");
 
+const LOGO_URL = "https://ud-dssa-website.vercel.app/images/heroWatermark.jpg";
+
 /** Structured intake fields used in ai_draft mode (mirrors the CLI prompts). */
 export interface AiDraftInput {
-  type: string;       // event / opportunity / announcement
-  audience: string;   // e.g. "UD students", "DSSA members"
-  topic: string;      // Main topic / title (1 line)
-  details: string;    // Date/time/location/deadline
-  cta: string;        // Call-to-action (RSVP link, form, etc.)
-  contact?: string;   // Contact person + email (optional)
-  extras?: string;    // Anything else to include (optional)
+  type: string;
+  audience: string;
+  topic: string;
+  details: string;
+  cta: string;
+  contact?: string;
+  extras?: string;
 }
 
 export interface GenerateEmailRequest {
   contentMode: ContentMode;
-  tone?: string; // default: "friendly-professional"
+  tone?: string;
 
   // For manual & ai_polish modes
   subject?: string;
@@ -54,6 +57,36 @@ export interface GenerateEmailRequest {
 export interface GenerateEmailResult {
   subject: string;
   body: string;
+}
+
+// ── Markdown configuration ───────────────────────────────────────────────────
+
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
+/**
+ * Convert markdown to email-safe HTML with inline styles.
+ * Email clients don't support <style> blocks, so we inline everything.
+ */
+export function markdownToEmailHtml(markdown: string): string {
+  const rawHtml = marked.parse(markdown) as string;
+
+  return rawHtml
+    .replace(/<h1(.*?)>/g, '<h1 style="margin:0 0 16px;font-size:28px;font-weight:700;color:#1B365D;line-height:1.3;">')
+    .replace(/<h2(.*?)>/g, '<h2 style="margin:24px 0 12px;font-size:22px;font-weight:600;color:#1B365D;line-height:1.3;">')
+    .replace(/<h3(.*?)>/g, '<h3 style="margin:20px 0 8px;font-size:18px;font-weight:600;color:#1B365D;line-height:1.3;">')
+    .replace(/<p(.*?)>/g, '<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#333333;">')
+    .replace(/<ul(.*?)>/g, '<ul style="margin:0 0 16px;padding-left:24px;color:#333333;">')
+    .replace(/<ol(.*?)>/g, '<ol style="margin:0 0 16px;padding-left:24px;color:#333333;">')
+    .replace(/<li(.*?)>/g, '<li style="margin:0 0 8px;font-size:16px;line-height:1.5;">')
+    .replace(/<a /g, '<a style="color:#1B365D;font-weight:500;text-decoration:underline;" ')
+    .replace(/<hr\s*\/?>/g, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />')
+    .replace(/<blockquote(.*?)>/g, '<blockquote style="margin:16px 0;padding:12px 20px;border-left:4px solid #D4A020;background:#f8f9fa;font-style:italic;color:#555555;">')
+    .replace(/<img /g, '<img style="max-width:100%;height:auto;border-radius:8px;display:block;margin:16px auto;" ')
+    .replace(/<strong(.*?)>/g, '<strong style="font-weight:600;color:#1a1a1a;">')
+    .replace(/<em(.*?)>/g, '<em style="font-style:italic;">');
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
@@ -78,21 +111,23 @@ function resolveProvider(): { provider: AiProvider; apiKey: string } {
 }
 
 function buildSystemPrompt(tone: string): string {
-  return `You are helping draft an email for a university data science student association (UD-DSSA).
+  return `You are helping draft an email for a university data science student association (UD-DSSA at the University of Delaware).
 Tone: ${tone}.
 Requirements:
 - Output MUST be valid JSON with exactly these keys: "subject", "body".
 - "subject": short, clear, not spammy (avoid ALL CAPS, too many !!!).
-- "body": plain text email body, friendly and professional. Emojis are allowed but keep it tasteful (0–3).
-- Keep body under ~220 words unless user asks otherwise.
+- "body": the email body written in **Markdown** format. Use headings (##, ###), bold, italic, bullet lists, horizontal rules (---), and emojis as appropriate.
+- Keep body under ~300 words unless user asks otherwise.
 - Include a call-to-action and relevant details.
-- The body MUST start with exactly: "Hi {name},"
+- The body SHOULD start with a personalized greeting like "## Hey {name}!" or "Hi {name}," using the {name} placeholder.
+- Use markdown formatting creatively: headings for sections, bold for emphasis, lists for key points, --- for visual breaks.
+- Images can be referenced with ![alt](url) syntax if provided.
 - Avoid exaggerated marketing claims.
-Return ONLY JSON. No markdown. No commentary.`;
+Return ONLY valid JSON. No markdown fences. No commentary outside the JSON.`;
 }
 
 function buildDraftUserMessage(input: AiDraftInput): string {
-  return `Write an email for UD-DSSA.
+  return `Write an email for UD-DSSA in Markdown format.
 
 TYPE: ${input.type}
 AUDIENCE: ${input.audience}
@@ -103,9 +138,9 @@ CONTACT: ${input.contact ?? ""}
 NOTES: ${input.extras ?? ""}
 
 Return ONLY JSON with keys "subject" and "body".
-The body MUST start with: "Hi {name},"
-Keep it clear, non-spammy, and under ~200 words.
-Use at most 2 emojis total.`;
+The body MUST be written in Markdown format with appropriate headings, bold, lists, and emojis.
+Start with a greeting using {name} placeholder.
+Keep it clear, engaging, and under ~250 words.`;
 }
 
 function buildPolishUserMessage(
@@ -114,6 +149,7 @@ function buildPolishUserMessage(
 ): string {
   return `Improve the following email while preserving meaning and facts.
 Make it clearer, better structured, and aligned with the tone.
+The body should use Markdown formatting (headings, bold, lists, horizontal rules, emojis where appropriate).
 
 DRAFT SUBJECT:
 ${draftSubject}
@@ -121,7 +157,7 @@ ${draftSubject}
 DRAFT BODY:
 ${draftBody}
 
-Return ONLY JSON with keys "subject" and "body".`;
+Return ONLY JSON with keys "subject" and "body". The body must be valid Markdown.`;
 }
 
 /** Call OpenAI or DeepSeek and return the raw text content from the response. */
@@ -139,7 +175,7 @@ async function callAiProvider(
   if (provider === "openai") {
     const resolvedModel = (
       model ||
-      process.env.OPENAI_MODEL ||  // # setting to gpt-5-mini in Vercel env var
+      process.env.OPENAI_MODEL ||
       "gpt-4.1-mini"
     ).trim();
     
@@ -168,7 +204,6 @@ async function callAiProvider(
       console.log("[AI] provider=openai model=%s key=...%s org=%s project=%s", resolvedModel, keySuffix, openAiOrg ? "set" : "unset", openAiProject ? "set" : "unset");
     }
   } else {
-    // deepseek
     url = "https://api.deepseek.com/chat/completions";
     headers = {
       Authorization: `Bearer ${apiKey}`,
@@ -232,7 +267,6 @@ async function callAiProvider(
 }
 
 function parseAiJson(raw: string): { subject: string; body: string } {
-  // Strip potential markdown fences the model might add despite instructions
   let cleaned = raw.trim();
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```[a-z]*\n?/i, "").replace(/\n?```\s*$/, "");
@@ -249,33 +283,7 @@ function parseAiJson(raw: string): { subject: string; body: string } {
   return { subject, body };
 }
 
-/** Ensure the body starts with a "Hi {name}," greeting (mirrors Python behaviour). */
-function ensureNameGreeting(body: string): string {
-  if (!body.includes("{name}")) {
-    return `Hi {name},\n\n${body}`;
-  }
-  return body;
-}
-
 const URL_REGEX = /https?:\/\/[\S]+/gi;
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function convertTextToHtml(body: string): string {
-  const escaped = escapeHtml(body);
-  const linked = escaped.replace(URL_REGEX, (url) => `<a href="${url}" style="color:#1e40af;text-decoration:none;">${url}</a>`);
-  return linked
-    .split(/\n{2,}/)
-    .map((paragraph) => `<p style="margin:0 0 1rem;">${paragraph.replace(/\n/g, "<br />")}</p>`)
-    .join("");
-}
 
 function buildUnsubscribeUrl(baseUrl: string | undefined, recipientEmail: string, list: EmailType | "all") {
   const siteUrl =
@@ -302,19 +310,6 @@ async function loadEmailTemplate(): Promise<string> {
   return await readFile(EMAIL_TEMPLATE_PATH, "utf-8");
 }
 
-function buildCtaButton(body: string): string {
-  const firstUrlMatch = body.match(URL_REGEX)?.[0];
-  if (!firstUrlMatch) {
-    return "";
-  }
-
-  return `<a href="${firstUrlMatch}" class="cta-button" style="background-color:#1e40af;color:#ffffff;display:inline-block;padding:15px 30px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">View Details</a>`;
-}
-
-function buildUnsubscribeButton(unsubscribeUrl: string, unsubscribeLabel: string): string {
-  return `<a href="${unsubscribeUrl}" class="unsubscribe-button">Unsubscribe from ${unsubscribeLabel}</a>`;
-}
-
 export async function buildEmailHtml({
   subject,
   body,
@@ -332,32 +327,20 @@ export async function buildEmailHtml({
   const type = emailType || "newsletter";
   const senderLabel = EMAIL_TYPE_LABELS[type];
   const unsubscribeUrl = buildUnsubscribeUrl(baseUrl, recipientEmail, type);
-  const bodyHtml = convertTextToHtml(body);
-  const ctaButton = buildCtaButton(body);
-  const unsubscribeButton = buildUnsubscribeButton(unsubscribeUrl, senderLabel);
+  const bodyHtml = markdownToEmailHtml(body);
 
   return renderTemplate(template, {
     senderLabel,
-    senderDescription: "Building the graduate student data science ecosystem at UD",
-    subject: escapeHtml(subject),
+    senderDescription: "Data Science Student Association @ University of Delaware",
+    subject,
     bodyHtml,
     unsubscribeUrl,
-    unsubscribeLabel: senderLabel,
-    ctaButton,
-    unsubscribeButton,
+    logoUrl: LOGO_URL,
   });
 }
 
 /**
- * Append a standard unsubscribe footer to the email body.
- *
- * The link points to /unsubscribe?email=<encoded email> on the site,
- * which shows a confirmation page before processing the request.
- *
- * @param body           The email body (already personalised).
- * @param recipientEmail The recipient's email address.
- * @param baseUrl        The site base URL (no trailing slash). Falls back to
- *                       NEXT_PUBLIC_SITE_URL / NEXT_PUBLIC_VERCEL_URL / localhost.
+ * Append a standard unsubscribe footer to the plain-text email body.
  */
 export function appendUnsubscribeLink(
   body: string,
@@ -375,7 +358,7 @@ export function appendUnsubscribeLink(
 
 /**
  * Generate (or pass-through) an email subject + body based on the requested
- * content mode. This is the main entry point that the API route calls.
+ * content mode. Returns markdown in the body field.
  */
 export async function generateEmail(
   req: GenerateEmailRequest
@@ -385,7 +368,7 @@ export async function generateEmail(
   // ── Manual mode ──────────────────────────────────────────────────────────
   if (req.contentMode === "manual") {
     const subject = (req.subject ?? "").trim();
-    const body = ensureNameGreeting((req.body ?? "").trim());
+    const body = (req.body ?? "").trim();
 
     if (!subject || !body) {
       throw new Error("Manual mode requires both a subject and body.");
@@ -421,15 +404,14 @@ export async function generateEmail(
     userMessage
   );
 
-  const { subject, body: rawBody } = parseAiJson(rawOutput);
-  const body = ensureNameGreeting(rawBody);
+  const { subject, body } = parseAiJson(rawOutput);
 
   return { subject, body };
 }
 
 /**
  * Personalise the email body by replacing {name} with the recipient's name.
- * Falls back to "there" when the name is empty (mirrors Python behaviour).
+ * Falls back to "there" when the name is empty.
  */
 export function personaliseBody(
   bodyTemplate: string,
@@ -440,4 +422,3 @@ export function personaliseBody(
     recipientName?.trim() || "there"
   );
 }
-

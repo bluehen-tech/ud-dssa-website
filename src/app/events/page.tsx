@@ -60,7 +60,7 @@ function generateSlug(title: string): string {
 }
 
 export default function EventsPage() {
-  const { session, isAdmin, isLoading } = useAuth();
+  const { session, isAdmin, hasEmailAccess, isLoading } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -271,7 +271,7 @@ export default function EventsPage() {
                   <strong>Signed in as:</strong> {userEmail}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {isAdmin ? 'Admin' : 'Member'}
+                  {isAdmin ? 'Admin' : hasEmailAccess ? 'Email Manager' : 'Member'}
                 </p>
               </div>
             )}

@@ -9,6 +9,7 @@ import type { Session } from '@supabase/supabase-js';
 interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
+  hasEmailAccess: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -19,103 +20,113 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasEmailAccess, setHasEmailAccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const isMountedRef = useRef(true);
   const initializingRef = useRef(false);
 
-  // Cache key for admin status
-  const getAdminCacheKey = (userId: string) => `admin_status_${userId}`;
+  interface CachedPermissions {
+    isAdmin: boolean;
+    hasEmailAccess: boolean;
+  }
 
-  // Get cached admin status
-  const getCachedAdminStatus = (userId: string): boolean | null => {
+  const getPermCacheKey = (userId: string) => `user_perms_${userId}`;
+
+  const getCachedPermissions = (userId: string): CachedPermissions | null => {
     if (typeof window === 'undefined') return null;
     try {
-      const cached = sessionStorage.getItem(getAdminCacheKey(userId));
-      return cached === 'true' ? true : cached === 'false' ? false : null;
+      const raw = sessionStorage.getItem(getPermCacheKey(userId));
+      if (!raw) {
+        // Migrate legacy cache key
+        const legacy = sessionStorage.getItem(`admin_status_${userId}`);
+        if (legacy !== null) {
+          sessionStorage.removeItem(`admin_status_${userId}`);
+          const perms: CachedPermissions = { isAdmin: legacy === 'true', hasEmailAccess: false };
+          sessionStorage.setItem(getPermCacheKey(userId), JSON.stringify(perms));
+          return perms;
+        }
+        return null;
+      }
+      return JSON.parse(raw) as CachedPermissions;
     } catch {
       return null;
     }
   };
 
-  // Set cached admin status
-  const setCachedAdminStatus = (userId: string, isAdmin: boolean) => {
+  const setCachedPermissions = (userId: string, perms: CachedPermissions) => {
     if (typeof window === 'undefined') return;
     try {
-      sessionStorage.setItem(getAdminCacheKey(userId), String(isAdmin));
+      sessionStorage.setItem(getPermCacheKey(userId), JSON.stringify(perms));
     } catch (error) {
-      console.error('Error caching admin status:', error);
+      console.error('Error caching permissions:', error);
     }
   };
 
-  // Clear cached admin status
-  const clearCachedAdminStatus = (userId?: string) => {
+  const clearCachedPermissions = (userId?: string) => {
     if (typeof window === 'undefined') return;
     try {
       if (userId) {
-        sessionStorage.removeItem(getAdminCacheKey(userId));
+        sessionStorage.removeItem(getPermCacheKey(userId));
+        sessionStorage.removeItem(`admin_status_${userId}`);
       } else {
-        // Clear all admin status caches
         Object.keys(sessionStorage).forEach(key => {
-          if (key.startsWith('admin_status_')) {
+          if (key.startsWith('user_perms_') || key.startsWith('admin_status_')) {
             sessionStorage.removeItem(key);
           }
         });
       }
     } catch (error) {
-      console.error('Error clearing cached admin status:', error);
+      console.error('Error clearing cached permissions:', error);
     }
   };
 
-  // Fetch admin status with caching
-  const fetchAdminStatus = async (userId: string, useCache = true) => {
+  const fetchPermissions = async (userId: string, useCache = true): Promise<CachedPermissions> => {
+    const fallback: CachedPermissions = { isAdmin: false, hasEmailAccess: false };
     try {
-      // Check cache first
       if (useCache) {
-        const cached = getCachedAdminStatus(userId);
+        const cached = getCachedPermissions(userId);
         if (cached !== null) {
-          console.log('✅ Using cached admin status:', cached ? 'Admin' : 'Member');
+          console.log('✅ Using cached permissions:', cached.isAdmin ? 'Admin' : 'Member', cached.hasEmailAccess ? '+ Email' : '');
           return cached;
         }
       }
 
       const supabase = createClient();
-      
-      // Add timeout to prevent infinite hanging
+
       const queryPromise = supabase
         .from('profiles')
-        .select('admin_flag')
+        .select('admin_flag, email_access_flag')
         .eq('id', userId)
         .maybeSingle();
-      
-      const timeoutPromise = new Promise((_, reject) => 
+
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
       );
-      
+
       const { data: profile, error } = await Promise.race([
         queryPromise,
         timeoutPromise
       ]) as any;
-      
+
       if (error) {
         console.error('Error fetching profile:', error);
-        // Return cached value if available, otherwise false
-        const cached = getCachedAdminStatus(userId);
-        return cached !== null ? cached : false;
+        const cached = getCachedPermissions(userId);
+        return cached ?? fallback;
       }
-      
-      const isAdmin = profile?.admin_flag === true;
-      console.log('✅ User role:', isAdmin ? 'Admin' : 'Member');
-      
-      // Cache the result
-      setCachedAdminStatus(userId, isAdmin);
-      
-      return isAdmin;
+
+      const perms: CachedPermissions = {
+        isAdmin: profile?.admin_flag === true,
+        hasEmailAccess: profile?.admin_flag === true || profile?.email_access_flag === true,
+      };
+      console.log('✅ User role:', perms.isAdmin ? 'Admin' : 'Member', perms.hasEmailAccess ? '+ Email' : '');
+
+      setCachedPermissions(userId, perms);
+      return perms;
     } catch (error) {
-      console.error('Error fetching admin status:', error instanceof Error ? error.message : String(error));
-      // Return cached value if available, otherwise false
-      const cached = getCachedAdminStatus(userId);
-      return cached !== null ? cached : false;
+      console.error('Error fetching permissions:', error instanceof Error ? error.message : String(error));
+      const cached = getCachedPermissions(userId);
+      return cached ?? fallback;
     }
   };
 
@@ -170,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMountedRef.current) {
           setSession(null);
           setIsAdmin(false);
+          setHasEmailAccess(false);
           setIsLoading(false);
         }
         return;
@@ -181,11 +193,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🆔 User ID:', currentSession.user.id);
         console.log('⏰ Session expires at:', new Date(currentSession.expires_at * 1000).toISOString());
         
-        // Valid session
         setSessionStartTime();
         console.log('⏰ Session start time set');
         
-        // Verify email domain
         const userEmail = currentSession.user.email;
         if (!userEmail || !userEmail.endsWith('@udel.edu')) {
           console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -199,33 +209,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (isMountedRef.current) {
             setSession(null);
             setIsAdmin(false);
+            setHasEmailAccess(false);
             clearSessionStartTime();
           }
         } else {
           console.log('✅ Email domain validation passed');
           
-          // Check cache first for immediate admin status
-          const cachedAdmin = getCachedAdminStatus(currentSession.user.id);
-          console.log('💾 Cached admin status:', cachedAdmin !== null ? (cachedAdmin ? 'Admin' : 'Member') : 'Not cached');
+          const cachedPerms = getCachedPermissions(currentSession.user.id);
+          console.log('💾 Cached permissions:', cachedPerms ? (cachedPerms.isAdmin ? 'Admin' : 'Member') : 'Not cached');
           
-          // Set session and cached admin status immediately
           if (isMountedRef.current) {
             setSession(currentSession);
-            if (cachedAdmin !== null) {
-              setIsAdmin(cachedAdmin);
-              console.log('✅ Set admin status from cache:', cachedAdmin ? 'Admin' : 'Member');
+            if (cachedPerms) {
+              setIsAdmin(cachedPerms.isAdmin);
+              setHasEmailAccess(cachedPerms.hasEmailAccess);
+              console.log('✅ Set permissions from cache');
             }
           }
           
-          // Fetch fresh admin status in background (will use cache if available)
-          console.log('📤 Fetching fresh admin status...');
-          fetchAdminStatus(currentSession.user.id, true).then(adminStatus => {
-            console.log('✅ Admin status fetched:', adminStatus ? 'Admin' : 'Member');
+          console.log('📤 Fetching fresh permissions...');
+          fetchPermissions(currentSession.user.id, true).then(perms => {
+            console.log('✅ Permissions fetched:', perms.isAdmin ? 'Admin' : 'Member');
             if (isMountedRef.current) {
-              setIsAdmin(adminStatus);
+              setIsAdmin(perms.isAdmin);
+              setHasEmailAccess(perms.hasEmailAccess);
             }
           }).catch(error => {
-            console.error('❌ Error fetching admin status:', error);
+            console.error('❌ Error fetching permissions:', error);
           });
         }
       } else {
@@ -239,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMountedRef.current) {
           setSession(null);
           setIsAdmin(false);
+          setHasEmailAccess(false);
           clearSessionStartTime();
         }
       }
@@ -254,6 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isMountedRef.current) {
         setSession(null);
         setIsAdmin(false);
+        setHasEmailAccess(false);
       }
     } finally {
       if (isMountedRef.current) {
@@ -307,13 +319,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // Clear local state
       setSession(null);
       setIsAdmin(false);
+      setHasEmailAccess(false);
       clearSessionStartTime();
-      clearCachedAdminStatus(); // Clear all cached admin statuses
+      clearCachedPermissions();
       
-      // Force a hard navigation to clear any cached state
       if (typeof window !== 'undefined') {
         setTimeout(() => {
           window.location.href = '/';
@@ -324,11 +335,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error signing out:', error instanceof Error ? error.message : String(error));
       
-      // Even if there's an error, try to clear local state
       setSession(null);
       setIsAdmin(false);
+      setHasEmailAccess(false);
       clearSessionStartTime();
-      clearCachedAdminStatus(); // Clear all cached admin statuses
+      clearCachedPermissions();
       
       if (typeof window !== 'undefined') {
         setTimeout(() => {
@@ -368,8 +379,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMountedRef.current) {
           setSession(null);
           setIsAdmin(false);
+          setHasEmailAccess(false);
           clearSessionStartTime();
-          clearCachedAdminStatus(); // Clear all cached admin statuses
+          clearCachedPermissions();
         }
         return;
       }
@@ -386,37 +398,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (isMountedRef.current) {
               setSession(null);
               setIsAdmin(false);
+              setHasEmailAccess(false);
               clearSessionStartTime();
             }
             return;
           }
 
-          // Set session FIRST, with cached admin status if available
           if (isMountedRef.current) {
             setSession(currentSession);
-            
-            // Use cached admin status immediately if available
-            const cachedAdmin = getCachedAdminStatus(currentSession.user.id);
-            if (cachedAdmin !== null) {
-              setIsAdmin(cachedAdmin);
+
+            const cachedPerms = getCachedPermissions(currentSession.user.id);
+            if (cachedPerms) {
+              setIsAdmin(cachedPerms.isAdmin);
+              setHasEmailAccess(cachedPerms.hasEmailAccess);
             }
           }
 
-          // Check admin status (async, will use cache and update if needed)
           try {
-            const adminStatus = await fetchAdminStatus(currentSession.user.id, true);
-            
+            const perms = await fetchPermissions(currentSession.user.id, true);
+
             if (isMountedRef.current) {
-              setIsAdmin(adminStatus);
+              setIsAdmin(perms.isAdmin);
+              setHasEmailAccess(perms.hasEmailAccess);
             }
           } catch (error) {
-            console.error('Failed to fetch admin status:', error);
-            // Keep cached value if fetch fails
+            console.error('Failed to fetch permissions:', error);
           }
         } else {
           if (isMountedRef.current) {
             setSession(null);
             setIsAdmin(false);
+            setHasEmailAccess(false);
             clearSessionStartTime();
           }
         }
@@ -433,6 +445,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMountedRef.current) {
           setSession(null);
           setIsAdmin(false);
+          setHasEmailAccess(false);
           clearSessionStartTime();
         }
         router.push('/login?error=Session expired. Please sign in again.');
@@ -451,6 +464,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{ 
         session, 
         isAdmin, 
+        hasEmailAccess,
         isLoading, 
         signOut,
         refreshSession 

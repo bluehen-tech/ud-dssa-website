@@ -27,7 +27,6 @@ function resolveFromAddress(senderKey?: string, emailType?: string): string {
     return process.env[envVar]!;
   }
 
-  // Fallback chain: type-specific -> newsletter -> RESEND_FROM -> hardcoded default
   return (
     process.env.RESEND_FROM_NEWSLETTER ||
     process.env.RESEND_FROM ||
@@ -39,15 +38,7 @@ function resolveFromAddress(senderKey?: string, emailType?: string): string {
  * POST /api/email/send
  *
  * Sends the finalised email to a list of recipients via the Resend API.
- *
- * Expected body:
- * {
- *   subject: string;
- *   body: string;            // may contain {name} placeholder
- *   recipients: Array<{ email: string; name?: string }>;
- *   emailType?: "newsletter" | "event" | "opportunity" | "announcement";
- *   senderKey?: "newsletter" | "event" | "opportunity" | "announcement";
- * }
+ * The body field contains Markdown which is rendered to HTML using the email template.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -98,7 +89,6 @@ export async function POST(request: NextRequest) {
 
     const { subject, body: bodyTemplate, recipients, emailType, senderKey } = payload;
 
-    // Validate emailType / senderKey if provided
     if (senderKey && !VALID_EMAIL_TYPES.includes(senderKey as EmailType)) {
       return NextResponse.json(
         { success: false, message: `Invalid senderKey. Must be one of: ${VALID_EMAIL_TYPES.join(", ")}` },
@@ -135,7 +125,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate all emails are non-empty strings
     for (const r of recipients) {
       if (!r.email || typeof r.email !== "string" || !r.email.includes("@")) {
         return NextResponse.json(
@@ -158,6 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     const fromAddr = resolveFromAddress(senderKey, emailType);
+    const replyTo = process.env.RESEND_REPLY_TO || "dssa@udel.edu";
 
     // ── Send to each recipient ─────────────────────────────────────────────
     const results: Array<{
@@ -177,7 +167,7 @@ export async function POST(request: NextRequest) {
       .select("email,status,source_metadata")
       .in("email", normalizedEmails);
 
-    const contactMap = new Map<string, { status: string; source_metadata: any }>();
+    const contactMap = new Map<string, { status: string; source_metadata: unknown }>();
     (contacts || []).forEach((contact) => {
       if (contact?.email) {
         contactMap.set(String(contact.email).toLowerCase(), {
@@ -194,8 +184,11 @@ export async function POST(request: NextRequest) {
       const isSuppressed = !!(
         contact &&
         (contact.status === "unsubscribed" ||
-          contact.source_metadata?.unsubscribed_lists?.includes("all") ||
-          contact.source_metadata?.unsubscribed_lists?.includes(effectiveEmailType))
+          (contact.source_metadata as Record<string, unknown>)?.unsubscribed_lists &&
+          (
+            ((contact.source_metadata as Record<string, string[]>)?.unsubscribed_lists?.includes("all")) ||
+            ((contact.source_metadata as Record<string, string[]>)?.unsubscribed_lists?.includes(effectiveEmailType))
+          ))
       );
 
       if (isSuppressed) {
@@ -208,7 +201,7 @@ export async function POST(request: NextRequest) {
       }
 
       const personalisedBody = personaliseBody(bodyTemplate, recipient.name);
-      const finalBody = appendUnsubscribeLink(
+      const plainText = appendUnsubscribeLink(
         personalisedBody,
         recipientEmail,
         baseUrl,
@@ -231,9 +224,10 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             from: fromAddr,
+            reply_to: replyTo,
             to: [recipientEmail],
             subject: subject.trim(),
-            text: finalBody,
+            text: plainText,
             html: finalHtml,
           }),
         });
@@ -262,7 +256,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Small delay between sends to avoid rate limiting (matches Python script)
       if (recipients.length > 1) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
