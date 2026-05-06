@@ -75,17 +75,16 @@ export default function EmailPreview({
           style={{
             background: "#0d1031",
             padding: "20px 24px 16px",
-            borderRadius: "12px 12px 0 0",
           }}
         >
           <p style={{ margin: 0, fontSize: 42, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
             DSSA
           </p>
           <div style={{ width: 80, height: 3, background: "#D4A020", margin: "4px auto" }} />
-          <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.85)", letterSpacing: "1.5px", textTransform: "uppercase" as const }}>
+          <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 400, color: "#d9d9e8", letterSpacing: "1.5px", textTransform: "uppercase" as const }}>
             Data Science Student Association
           </p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: "#9a9ab0" }}>
             University of Delaware
           </p>
           <div style={{ marginTop: 10 }}>
@@ -94,7 +93,7 @@ export default function EmailPreview({
             </span>
           </div>
           <p style={{ margin: "6px 0 0", fontSize: 12 }}>
-            <a href="https://bluehen-dssa.org" style={{ color: "rgba(255,255,255,0.75)", textDecoration: "none" }}>
+            <a href="https://bluehen-dssa.org" style={{ color: "#bfbfd0", textDecoration: "none" }}>
               bluehen-dssa.org
             </a>
           </p>
