@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase-config';
 
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createClient(request);
@@ -11,8 +12,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
-  // Only check session for protected paths
-  if (isProtectedPath) {
+  // Only check session for protected paths, and only if Supabase is configured
+  if (isProtectedPath && isSupabaseConfigured()) {
     // Get and refresh session if needed
     const {
       data: { session },
@@ -54,6 +55,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
   }
+
+  // If Supabase is not configured and accessing protected route, allow access
+  // (useful for previewing the site without Supabase credentials)
+  // Note: This means protected routes won't be protected in demo mode
 
   return response;
 }
