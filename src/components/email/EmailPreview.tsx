@@ -8,12 +8,23 @@ interface EmailPreviewProps {
   body: string;
   senderLabel: string;
   previewName?: string;
+  previewEmail?: string;
 }
 
 marked.setOptions({ breaks: true, gfm: true });
 
-function personalise(text: string, name: string): string {
-  return text.replace(/\{name\}/g, name);
+const PREVIEW_TOKEN_REGEX = /\{(name|first_name|email)(?:\|([^}]*))?\}/g;
+
+function personalise(text: string, name: string, email: string): string {
+  const firstName = name.split(/\s+/)[0] || "";
+  const values: Record<string, string> = { name, first_name: firstName, email };
+
+  return text.replace(PREVIEW_TOKEN_REGEX, (_match, token: string, inlineOverride?: string) => {
+    const value = values[token];
+    if (value) return value;
+    if (inlineOverride !== undefined) return inlineOverride;
+    return token === "email" ? "" : "DSSA Member";
+  });
 }
 
 /**
@@ -44,11 +55,12 @@ export default function EmailPreview({
   body,
   senderLabel,
   previewName = "John",
+  previewEmail = "john@udel.edu",
 }: EmailPreviewProps) {
   const renderedBody = useMemo(() => {
-    const personalised = personalise(body, previewName);
+    const personalised = personalise(body, previewName, previewEmail);
     return markdownToPreviewHtml(personalised);
-  }, [body, previewName]);
+  }, [body, previewName, previewEmail]);
 
   return (
     <div className="bg-[#f4f6f9] rounded-xl p-6 overflow-auto">
@@ -93,7 +105,7 @@ export default function EmailPreview({
         {subject && (
           <div className="px-8 pt-6 pb-2">
             <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Subject</p>
-            <p className="text-lg font-semibold text-gray-900">{personalise(subject, previewName)}</p>
+            <p className="text-lg font-semibold text-gray-900">{personalise(subject, previewName, previewEmail)}</p>
           </div>
         )}
 

@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const personalisedBody = personaliseBody(bodyTemplate, recipient.name);
+      const personalisedBody = personaliseBody(bodyTemplate, recipient.name, recipientEmail);
       const plainText = appendUnsubscribeLink(
         personalisedBody,
         recipientEmail,

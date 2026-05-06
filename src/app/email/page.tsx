@@ -151,9 +151,7 @@ function EmailPageContent() {
   >(null);
 
   // Recipients
-  const [recipientsText, setRecipientsText] = useState(
-    "otunmbi@udel.edu\najf@udel.edu"
-  );
+  const [recipientsText, setRecipientsText] = useState("");
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
@@ -285,6 +283,13 @@ function EmailPageContent() {
       setEmailType(draftType as EmailType);
     }
   }, [searchParams]);
+
+  // ── Default recipients to logged-in user ──────────────────────────────
+  useEffect(() => {
+    if (session?.user?.email && !recipientsText) {
+      setRecipientsText(session.user.email);
+    }
+  }, [session, recipientsText]);
 
   // ── Render guards ──────────────────────────────────────────────────────
 
@@ -638,6 +643,45 @@ function EmailPageContent() {
               <h2 className="text-lg font-semibold text-gray-800">
                 3. Review &amp; edit
               </h2>
+
+              {/* Markdown & token reference */}
+              <details className="rounded-lg border border-gray-200 bg-gray-50 text-sm">
+                <summary className="cursor-pointer select-none px-4 py-2.5 font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                  Markdown &amp; personalization reference
+                </summary>
+                <div className="px-4 pb-4 pt-1 space-y-4 text-gray-600 leading-relaxed">
+                  <div>
+                    <p className="font-semibold text-gray-700 mb-1.5">Markdown formatting</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 font-mono text-xs">
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">## Heading</code> <span className="text-gray-400 font-sans">— section heading</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">**bold**</code> <span className="text-gray-400 font-sans">— <strong>bold text</strong></span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">*italic*</code> <span className="text-gray-400 font-sans">— <em>italic text</em></span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">[text](url)</code> <span className="text-gray-400 font-sans">— hyperlink</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">- item</code> <span className="text-gray-400 font-sans">— bullet list</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">---</code> <span className="text-gray-400 font-sans">— horizontal rule</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">&gt; quote</code> <span className="text-gray-400 font-sans">— blockquote</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">![alt](url)</code> <span className="text-gray-400 font-sans">— image</span></div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-3">
+                    <p className="font-semibold text-gray-700 mb-1.5">Personalization tokens</p>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Tokens are replaced per-recipient when the email is sent. If recipient data is missing, the default fallback is used.
+                    </p>
+                    <div className="space-y-1 font-mono text-xs">
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">{"{name}"}</code> <span className="text-gray-400 font-sans">— full name (fallback: &quot;DSSA Member&quot;)</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">{"{first_name}"}</code> <span className="text-gray-400 font-sans">— first name (fallback: &quot;DSSA Member&quot;)</span></div>
+                      <div><code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">{"{email}"}</code> <span className="text-gray-400 font-sans">— email address (always available)</span></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Override any fallback with a pipe:{" "}
+                      <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 font-mono">{"{name|friend}"}</code>{" "}
+                      uses &quot;friend&quot; instead of &quot;DSSA Member&quot; when no name is known.
+                    </p>
+                  </div>
+                </div>
+              </details>
 
               {/* Subject input */}
               <div>

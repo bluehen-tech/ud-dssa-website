@@ -119,7 +119,8 @@ Requirements:
 - "body": the email body written in **Markdown** format. Use headings (##, ###), bold, italic, bullet lists, horizontal rules (---), and emojis as appropriate.
 - Keep body under ~300 words unless user asks otherwise.
 - Include a call-to-action and relevant details.
-- The body SHOULD start with a personalized greeting like "## Hey {name}!" or "Hi {name}," using the {name} placeholder.
+- The body SHOULD start with a personalized greeting like "## Hey {name}!" or "Hi {first_name}," using personalization tokens.
+- Available tokens: {name} (full name), {first_name} (first name only), {email} (email address). Default fallback is "DSSA Member" for name tokens. Override with pipe syntax: {name|friend}.
 - Use markdown formatting creatively: headings for sections, bold for emphasis, lists for key points, --- for visual breaks.
 - Images can be referenced with ![alt](url) syntax if provided.
 - Avoid exaggerated marketing claims.
@@ -409,16 +410,41 @@ export async function generateEmail(
   return { subject, body };
 }
 
+const DEFAULT_FALLBACKS: Record<string, string> = {
+  name: "DSSA Member",
+  first_name: "DSSA Member",
+  email: "",
+};
+
+const TOKEN_REGEX = /\{(name|first_name|email)(?:\|([^}]*))?\}/g;
+
 /**
- * Personalise the email body by replacing {name} with the recipient's name.
- * Falls back to "there" when the name is empty.
+ * Personalise the email body by replacing tokens with recipient data.
+ *
+ * Supported tokens: {name}, {first_name}, {email}.
+ * Any token accepts an inline fallback override via pipe syntax:
+ *   {name|friend}  ->  uses "friend" when no name is available.
+ * Without an override the built-in default is used ("DSSA Member" for
+ * name/first_name; email is always present).
  */
 export function personaliseBody(
   bodyTemplate: string,
-  recipientName?: string
+  recipientName?: string,
+  recipientEmail?: string
 ): string {
-  return bodyTemplate.replace(
-    /\{name\}/g,
-    recipientName?.trim() || "there"
-  );
+  const trimmedName = recipientName?.trim() || "";
+  const firstName = trimmedName.split(/\s+/)[0] || "";
+
+  const values: Record<string, string> = {
+    name: trimmedName,
+    first_name: firstName,
+    email: recipientEmail?.trim() || "",
+  };
+
+  return bodyTemplate.replace(TOKEN_REGEX, (_match, token: string, inlineOverride?: string) => {
+    const value = values[token];
+    if (value) return value;
+    if (inlineOverride !== undefined) return inlineOverride;
+    return DEFAULT_FALLBACKS[token] || "";
+  });
 }
