@@ -21,7 +21,7 @@ interface UseOpportunityResumesResult {
   isLoading: boolean;
   isUploading: boolean;
   error: string | null;
-  uploadResume: (opportunityId: string, file: File) => Promise<boolean>;
+  uploadResume: (opportunityId: string, file: File, deadline?: string | null) => Promise<boolean>;
   deleteResume: (opportunityId: string) => Promise<boolean>;
   downloadResume: (opportunityId: string) => Promise<void>;
   refreshResumes: () => Promise<void>;
@@ -86,7 +86,7 @@ export function useOpportunityResumes(): UseOpportunityResumesResult {
   }, [session?.user?.id]);
 
   const uploadResume = useCallback(
-    async (opportunityId: string, file: File): Promise<boolean> => {
+    async (opportunityId: string, file: File, deadline?: string | null): Promise<boolean> => {
       if (!session?.user?.id) {
         setError('You must be logged in to upload a resume');
         return false;
@@ -94,6 +94,12 @@ export function useOpportunityResumes(): UseOpportunityResumesResult {
 
       if (!opportunityId) {
         setError('Opportunity is required to upload a resume');
+        return false;
+      }
+
+      // Check if deadline has passed
+      if (deadline && new Date(deadline) < new Date()) {
+        setError('This opportunity has passed its deadline. Applications are no longer being accepted.');
         return false;
       }
 
