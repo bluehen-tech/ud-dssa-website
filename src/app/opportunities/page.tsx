@@ -16,6 +16,7 @@ import {
   parseCommaInput,
   toDatetimeLocalValue,
   sanitizeForFilename,
+  isDeadlinePassed,
 } from '@/utils/opportunityTransforms';
 
 const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024; // 5MB
@@ -355,7 +356,8 @@ export default function OpportunitiesPage() {
   // Resume/Application handlers
   const handleUploadResume = async (file: File): Promise<boolean> => {
     if (!resumeModalOpportunityId) return false;
-    const success = await uploadResume(resumeModalOpportunityId, file);
+    const opportunity = displayOpportunities.find(opp => opp.id === resumeModalOpportunityId);
+    const success = await uploadResume(resumeModalOpportunityId, file, opportunity?.deadline);
     if (success) {
       // Automatically submit application after successful resume upload
       const opportunityResume = getResumeForOpportunity(resumeModalOpportunityId);
@@ -846,6 +848,8 @@ export default function OpportunitiesPage() {
               const applied = hasApplied(opportunity.id);
               const application = applications.find(app => app.opportunity_id === opportunity.id && app.status !== 'withdrawn');
               const opportunityResume = resumesByOpportunity[opportunity.id];
+              const deadlinePassed = isDeadlinePassed(opportunity.deadline);
+              const canUploadResume = !deadlinePassed || canManageOpportunities;
               // Determine status: show actual application status, or "Applied" if resume uploaded, or "Not Applied" if neither
               const applicationStatus = application?.status || (opportunityResume ? 'pending' : 'not-applied');
               const resumeUploadedAtLabel = opportunityResume
@@ -863,6 +867,17 @@ export default function OpportunitiesPage() {
                   key={opportunity.id}
                   className="block bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-blue-primary"
                 >
+                  {deadlinePassed && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                      <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium text-red-700">
+                        🔒 Application Deadline Passed
+                        {canManageOpportunities && <span className="text-red-600"> (You can override as admin)</span>}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-start gap-3 mb-3">
@@ -979,17 +994,30 @@ export default function OpportunitiesPage() {
                                 </p>
                               </>
                             ) : (
-                              <p className="text-sm text-gray-700">No resume attached yet. Upload a resume to apply to this opportunity.</p>
+                              <p className="text-sm text-gray-700">
+                                {deadlinePassed && !canManageOpportunities
+                                  ? `Applications closed on ${formatDate(opportunity.deadline || '')}`
+                                  : 'No resume attached yet. Upload a resume to apply to this opportunity.'}
+                              </p>
                             )}
                           </div>
                           <span
                             className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${
-                              opportunityResume
+                              deadlinePassed && !canManageOpportunities
+                                ? 'bg-red-100 text-red-800 border-red-200'
+                                : opportunityResume
                                 ? 'bg-green-100 text-green-800 border-green-200'
                                 : 'bg-yellow-100 text-yellow-800 border-yellow-200'
                             }`}
                           >
-                            {opportunityResume ? (
+                            {deadlinePassed && !canManageOpportunities ? (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                Closed
+                              </>
+                            ) : opportunityResume ? (
                               <>
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1021,9 +1049,14 @@ export default function OpportunitiesPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  if (!canUploadResume) {
+                                    alert(`Applications for this opportunity closed on ${formatDate(opportunity.deadline || '')}`);
+                                    return;
+                                  }
                                   setResumeModalOpportunityId(opportunity.id);
                                 }}
-                                className="px-3 py-1.5 bg-blue-primary text-white text-xs font-medium rounded-md hover:bg-blue-800 transition-colors"
+                                disabled={!canUploadResume}
+                                className="px-3 py-1.5 bg-blue-primary text-white text-xs font-medium rounded-md hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Replace
                               </button>
@@ -1041,11 +1074,16 @@ export default function OpportunitiesPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                if (!canUploadResume) {
+                                  alert(`Applications for this opportunity closed on ${formatDate(opportunity.deadline || '')}`);
+                                  return;
+                                }
                                 setResumeModalOpportunityId(opportunity.id);
                               }}
-                              className="px-4 py-2 bg-blue-primary text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors"
+                              disabled={!canUploadResume}
+                              className="px-4 py-2 bg-blue-primary text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-primary"
                             >
-                              Upload Resume & Apply
+                              {deadlinePassed && !canManageOpportunities ? 'Applications Closed' : 'Upload Resume & Apply'}
                             </button>
                           )}
                         </div>

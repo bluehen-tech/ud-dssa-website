@@ -37,7 +37,7 @@ function GitHubStars() {
       href="https://github.com/bluehen-tech/ud-dssa-website"
       target="_blank"
       rel="noreferrer"
-      className="hidden xl:inline-flex h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+      className="hidden lg:inline-flex h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
       title="GitHub"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="currentColor">

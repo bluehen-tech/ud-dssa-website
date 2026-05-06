@@ -82,3 +82,8 @@ export const sanitizeForFilename = (value: string): string =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 60) || 'attachment';
 
+export const isDeadlinePassed = (deadline: string | null | undefined): boolean => {
+  if (!deadline) return false;
+  return new Date(deadline) < new Date();
+};
+
