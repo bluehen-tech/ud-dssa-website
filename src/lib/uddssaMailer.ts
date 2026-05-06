@@ -10,10 +10,23 @@
  * The AI providers supported are OpenAI and DeepSeek, selected via env var AI_PROVIDER.
  */
 
+import { readFile } from "fs/promises";
+import { join } from "path";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type ContentMode = "manual" | "ai_polish" | "ai_draft";
 export type AiProvider = "openai" | "deepseek";
+export type EmailType = "newsletter" | "event" | "opportunity" | "announcement";
+
+const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
+  newsletter: "Newsletter",
+  event: "Events",
+  opportunity: "Opportunities",
+  announcement: "Announcements",
+};
+
+const EMAIL_TEMPLATE_PATH = join(process.cwd(), "src", "emails", "udssa-recruitment-email.html");
 
 /** Structured intake fields used in ai_draft mode (mirrors the CLI prompts). */
 export interface AiDraftInput {
@@ -244,6 +257,120 @@ function ensureNameGreeting(body: string): string {
   return body;
 }
 
+const URL_REGEX = /https?:\/\/[\S]+/gi;
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function convertTextToHtml(body: string): string {
+  const escaped = escapeHtml(body);
+  const linked = escaped.replace(URL_REGEX, (url) => `<a href="${url}" style="color:#1e40af;text-decoration:none;">${url}</a>`);
+  return linked
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p style="margin:0 0 1rem;">${paragraph.replace(/\n/g, "<br />")}</p>`)
+    .join("");
+}
+
+function buildUnsubscribeUrl(baseUrl: string | undefined, recipientEmail: string, list: EmailType | "all") {
+  const siteUrl =
+    baseUrl?.replace(/\/+$/, "") ||
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+    process.env.NEXT_PUBLIC_VERCEL_URL?.replace(/\/+$/, "") ||
+    "http://localhost:3000";
+
+  const normalizedUrl = siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`;
+  const encodedEmail = encodeURIComponent(recipientEmail);
+  const encodedList = encodeURIComponent(list);
+
+  return `${normalizedUrl}/unsubscribe?email=${encodedEmail}&list=${encodedList}`;
+}
+
+function renderTemplate(template: string, values: Record<string, string>) {
+  return Object.entries(values).reduce(
+    (acc, [key, value]) => acc.replace(new RegExp(`{{${key}}}`, "g"), value),
+    template
+  );
+}
+
+async function loadEmailTemplate(): Promise<string> {
+  return await readFile(EMAIL_TEMPLATE_PATH, "utf-8");
+}
+
+function buildCtaButton(body: string): string {
+  const firstUrlMatch = body.match(URL_REGEX)?.[0];
+  if (!firstUrlMatch) {
+    return "";
+  }
+
+  return `<a href="${firstUrlMatch}" class="cta-button" style="background-color:#1e40af;color:#ffffff;display:inline-block;padding:15px 30px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">View Details</a>`;
+}
+
+function buildUnsubscribeButton(unsubscribeUrl: string, unsubscribeLabel: string): string {
+  return `<a href="${unsubscribeUrl}" class="unsubscribe-button">Unsubscribe from ${unsubscribeLabel}</a>`;
+}
+
+export async function buildEmailHtml({
+  subject,
+  body,
+  recipientEmail,
+  baseUrl,
+  emailType,
+}: {
+  subject: string;
+  body: string;
+  recipientEmail: string;
+  baseUrl?: string;
+  emailType?: EmailType;
+}): Promise<string> {
+  const template = await loadEmailTemplate();
+  const type = emailType || "newsletter";
+  const senderLabel = EMAIL_TYPE_LABELS[type];
+  const unsubscribeUrl = buildUnsubscribeUrl(baseUrl, recipientEmail, type);
+  const bodyHtml = convertTextToHtml(body);
+  const ctaButton = buildCtaButton(body);
+  const unsubscribeButton = buildUnsubscribeButton(unsubscribeUrl, senderLabel);
+
+  return renderTemplate(template, {
+    senderLabel,
+    senderDescription: "Building the graduate student data science ecosystem at UD",
+    subject: escapeHtml(subject),
+    bodyHtml,
+    unsubscribeUrl,
+    unsubscribeLabel: senderLabel,
+    ctaButton,
+    unsubscribeButton,
+  });
+}
+
+/**
+ * Append a standard unsubscribe footer to the email body.
+ *
+ * The link points to /unsubscribe?email=<encoded email> on the site,
+ * which shows a confirmation page before processing the request.
+ *
+ * @param body           The email body (already personalised).
+ * @param recipientEmail The recipient's email address.
+ * @param baseUrl        The site base URL (no trailing slash). Falls back to
+ *                       NEXT_PUBLIC_SITE_URL / NEXT_PUBLIC_VERCEL_URL / localhost.
+ */
+export function appendUnsubscribeLink(
+  body: string,
+  recipientEmail: string,
+  baseUrl?: string,
+  list: EmailType | "all" = "all"
+): string {
+  const unsubscribeUrl = buildUnsubscribeUrl(baseUrl, recipientEmail, list);
+  const listLabel = list === "all" ? "all emails" : EMAIL_TYPE_LABELS[list];
+
+  return `${body}\n\n---\nIf you no longer wish to receive these emails, you can unsubscribe from ${listLabel} here:\n${unsubscribeUrl}`;
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -314,34 +441,3 @@ export function personaliseBody(
   );
 }
 
-/**
- * Append a standard unsubscribe footer to the email body.
- *
- * The link points to /unsubscribe?email=<encoded email> on the site,
- * which shows a confirmation page before processing the request.
- *
- * @param body           The email body (already personalised).
- * @param recipientEmail The recipient's email address.
- * @param baseUrl        The site base URL (no trailing slash). Falls back to
- *                       NEXT_PUBLIC_SITE_URL / NEXT_PUBLIC_VERCEL_URL / localhost.
- */
-export function appendUnsubscribeLink(
-  body: string,
-  recipientEmail: string,
-  baseUrl?: string
-): string {
-  const siteUrl =
-    baseUrl ||
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
-    process.env.NEXT_PUBLIC_VERCEL_URL?.replace(/\/+$/, "") ||
-    "http://localhost:3001";
-
-  // Ensure https for non-localhost URLs
-  const normalizedUrl = siteUrl.startsWith("http")
-    ? siteUrl
-    : `https://${siteUrl}`;
-
-  const unsubscribeUrl = `${normalizedUrl}/unsubscribe?email=${encodeURIComponent(recipientEmail)}`;
-
-  return `${body}\n\n---\nIf you no longer wish to receive these emails, you can unsubscribe here:\n${unsubscribeUrl}`;
-}

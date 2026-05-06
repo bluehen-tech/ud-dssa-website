@@ -114,6 +114,8 @@ interface FormState {
   resume_size: string;
 }
 
+type AutoSaveState = 'idle' | 'saving' | 'saved' | 'error';
+
 const blankExperience = (): ExperienceForm => ({
   title: '',
   organization: '',
@@ -421,6 +423,10 @@ function clearLocalDraft(userId: string) {
   }
 }
 
+function serializeFormState(formData: FormState) {
+  return JSON.stringify(formData);
+}
+
 export default function MyPortfolioPage() {
   const router = useRouter();
   const { session, isLoading: authLoading } = useAuth();
@@ -437,9 +443,13 @@ export default function MyPortfolioPage() {
   const [uploadingResume, setUploadingResume] = useState(false);
   const [uploadResumeError, setUploadResumeError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>('idle');
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasHydratedFormRef = useRef(false);
+  const lastPersistedSnapshotRef = useRef<string | null>(null);
   const userId = session?.user?.id;
   const status = portfolio?.status;
   const canEdit = !portfolio || status === 'draft' || status === 'rejected' || status === 'published';
@@ -464,6 +474,53 @@ export default function MyPortfolioPage() {
     saveLocalDraft(userId, formData);
   }, [formData, userId, canEdit]);
 
+  useEffect(() => {
+    if (!portfolio || !userId || !canEdit || loading || saving || uploadingPhoto || uploadingResume) {
+      return;
+    }
+
+    const currentSnapshot = serializeFormState(formData);
+    if (!hasHydratedFormRef.current) {
+      return;
+    }
+
+    if (currentSnapshot === lastPersistedSnapshotRef.current) {
+      return;
+    }
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      setAutoSaveState('saving');
+      try {
+        const res = await fetch('/api/member-portfolios/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildPayload()),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to auto-save portfolio');
+        }
+
+        lastPersistedSnapshotRef.current = currentSnapshot;
+        setAutoSaveState('saved');
+      } catch (e) {
+        setAutoSaveState('error');
+        setError(e instanceof Error ? e.message : 'Failed to auto-save portfolio');
+      }
+    }, 1200);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+    };
+  }, [formData, portfolio, userId, canEdit, loading, saving, uploadingPhoto, uploadingResume]);
+
   const fetchMyPortfolio = async () => {
     setLoading(true);
     setError(null);
@@ -476,7 +533,11 @@ export default function MyPortfolioPage() {
 
       if (!data.portfolio) {
         const localDraft = userId ? loadLocalDraft(userId) : null;
-        setFormData(localDraft ?? initialFormState);
+        const nextFormData = localDraft ?? initialFormState;
+        setFormData(nextFormData);
+        lastPersistedSnapshotRef.current = serializeFormState(nextFormData);
+        hasHydratedFormRef.current = true;
+        setAutoSaveState('idle');
         return;
       }
 
@@ -578,11 +639,16 @@ export default function MyPortfolioPage() {
       if (data.portfolio.status === 'pending') {
         if (userId) clearLocalDraft(userId);
         setFormData(serverFormData);
+        lastPersistedSnapshotRef.current = serializeFormState(serverFormData);
+        hasHydratedFormRef.current = true;
+        setAutoSaveState('idle');
         return;
       }
 
-      const localDraft = userId ? loadLocalDraft(userId) : null;
-      setFormData(localDraft ?? serverFormData);
+      setFormData(serverFormData);
+      lastPersistedSnapshotRef.current = serializeFormState(serverFormData);
+      hasHydratedFormRef.current = true;
+      setAutoSaveState('idle');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load portfolio');
     } finally {
@@ -969,6 +1035,8 @@ export default function MyPortfolioPage() {
       if (!res.ok) throw new Error(data.message || 'Failed to save portfolio');
 
       if (userId) clearLocalDraft(userId);
+      lastPersistedSnapshotRef.current = serializeFormState(formData);
+      setAutoSaveState('saved');
 
       await fetchMyPortfolio();
     } catch (e) {
@@ -1009,6 +1077,8 @@ export default function MyPortfolioPage() {
       if (!submitRes.ok) throw new Error(submitData.message || 'Failed to publish portfolio');
 
       if (userId) clearLocalDraft(userId);
+      lastPersistedSnapshotRef.current = serializeFormState(formData);
+      setAutoSaveState('saved');
 
       await fetchMyPortfolio();
     } catch (e) {
@@ -1032,7 +1102,17 @@ export default function MyPortfolioPage() {
     <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold text-blue-primary">My Portfolio</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-blue-primary">My Portfolio</h1>
+            {portfolio && canEdit && (
+              <p className="text-sm text-gray-500 mt-1">
+                {autoSaveState === 'saving' && 'Saving changes...'}
+                {autoSaveState === 'saved' && 'Changes auto-saved'}
+                {autoSaveState === 'error' && 'Auto-save failed. Your local draft is still kept in this browser.'}
+                {autoSaveState === 'idle' && 'Saved changes will appear here automatically when you update your portfolio.'}
+              </p>
+            )}
+          </div>
           <Link href="/members" className="text-blue-primary hover:underline text-sm">
             ← Back to Members
           </Link>

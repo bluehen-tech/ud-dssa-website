@@ -56,6 +56,9 @@ export interface ContactSourceMetadata {
   csv_import_date?: string;
   sources?: string[];
   last_synced?: string;
+  unsubscribed_lists?: string[];
+  last_unsubscribed_at?: string;
+  unsubscribe_source?: string;
 }
 
 export interface Contact {

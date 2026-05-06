@@ -1,6 +1,7 @@
 export interface Event {
   id: string;
   title: string;
+  slug: string;
   description: string;
   event_date: string; // ISO date string
   event_url?: string; // Optional URL for event registration/info

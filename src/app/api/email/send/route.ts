@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { personaliseBody, appendUnsubscribeLink } from "@/lib/uddssaMailer";
+import {
+  personaliseBody,
+  appendUnsubscribeLink,
+  buildEmailHtml,
+  type EmailType,
+} from "@/lib/uddssaMailer";
 import { getBaseURL } from "@/lib/get-url";
 
 // ── Sender address resolution ─────────────────────────────────────────────
-
-type EmailType = "newsletter" | "event" | "opportunity" | "announcement";
 
 const SENDER_ENV_MAP: Record<EmailType, string> = {
   newsletter: "RESEND_FROM_NEWSLETTER",
@@ -109,6 +112,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const effectiveEmailType = (senderKey || emailType || "newsletter") as EmailType;
+
     if (!subject?.trim()) {
       return NextResponse.json(
         { success: false, message: "Subject is required" },
@@ -163,13 +168,59 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = getBaseURL();
 
+    const normalizedEmails = recipients.map((recipient) =>
+      recipient.email.trim().toLowerCase()
+    );
+
+    const { data: contacts } = await supabase
+      .from("contacts")
+      .select("email,status,source_metadata")
+      .in("email", normalizedEmails);
+
+    const contactMap = new Map<string, { status: string; source_metadata: any }>();
+    (contacts || []).forEach((contact) => {
+      if (contact?.email) {
+        contactMap.set(String(contact.email).toLowerCase(), {
+          status: contact.status,
+          source_metadata: contact.source_metadata,
+        });
+      }
+    });
+
     for (const recipient of recipients) {
+      const recipientEmail = recipient.email.trim();
+      const normalizedEmail = recipientEmail.toLowerCase();
+      const contact = contactMap.get(normalizedEmail);
+      const isSuppressed = !!(
+        contact &&
+        (contact.status === "unsubscribed" ||
+          contact.source_metadata?.unsubscribed_lists?.includes("all") ||
+          contact.source_metadata?.unsubscribed_lists?.includes(effectiveEmailType))
+      );
+
+      if (isSuppressed) {
+        results.push({
+          email: recipientEmail,
+          success: false,
+          detail: `Suppressed: unsubscribed from ${effectiveEmailType}`,
+        });
+        continue;
+      }
+
       const personalisedBody = personaliseBody(bodyTemplate, recipient.name);
       const finalBody = appendUnsubscribeLink(
         personalisedBody,
-        recipient.email,
-        baseUrl
+        recipientEmail,
+        baseUrl,
+        effectiveEmailType
       );
+      const finalHtml = await buildEmailHtml({
+        subject: subject.trim(),
+        body: personalisedBody,
+        recipientEmail,
+        baseUrl,
+        emailType: effectiveEmailType,
+      });
 
       try {
         const res = await fetch("https://api.resend.com/emails", {
@@ -180,9 +231,10 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             from: fromAddr,
-            to: [recipient.email],
+            to: [recipientEmail],
             subject: subject.trim(),
             text: finalBody,
+            html: finalHtml,
           }),
         });
 

@@ -1,7 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { dbRowToMemberPortfolio } from '@/lib/memberPortfolioUtils';
-import type { MemberPortfolioRow, MemberRole } from '@/types/member';
+import type { MemberPortfolio, MemberPortfolioRow, MemberRole } from '@/types/member';
+
+const OFFICER_POSITION_PRIORITY = [
+  'faculty advisor',
+  'president',
+  'vice president',
+  'tech lead',
+  'treasurer',
+  'co-tech lead',
+] as const;
+
+function normalizeOfficerPosition(position: string | undefined) {
+  return position
+    ?.trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function getOfficerPriority(position: string | undefined) {
+  const normalizedPosition = normalizeOfficerPosition(position);
+
+  if (!normalizedPosition) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  if (normalizedPosition === 'faculty adviser') {
+    return 0;
+  }
+
+  if (normalizedPosition === 'technical lead') {
+    return 3;
+  }
+
+  if (normalizedPosition === 'co technical lead') {
+    return 5;
+  }
+
+  const priorityIndex = OFFICER_POSITION_PRIORITY.indexOf(
+    normalizedPosition as (typeof OFFICER_POSITION_PRIORITY)[number]
+  );
+
+  return priorityIndex === -1 ? Number.MAX_SAFE_INTEGER : priorityIndex;
+}
+
+function sortPortfolios(portfolios: MemberPortfolio[]) {
+  return [...portfolios].sort((a, b) => {
+    if (a.role === 'officer' && b.role === 'officer') {
+      const rankDifference = getOfficerPriority(a.position) - getOfficerPriority(b.position);
+      if (rankDifference !== 0) {
+        return rankDifference;
+      }
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+}
 
 /** GET /api/member-portfolios — list published portfolios only. Optional ?role=officer|member|alumni */
 export async function GET(request: NextRequest) {
@@ -27,7 +83,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Failed to fetch portfolios' }, { status: 500 });
     }
 
-    const portfolios = (rows ?? []).map((row) => dbRowToMemberPortfolio(row as MemberPortfolioRow));
+    const portfolios = sortPortfolios(
+      (rows ?? []).map((row) => dbRowToMemberPortfolio(row as MemberPortfolioRow))
+    );
     return NextResponse.json({ success: true, portfolios });
   } catch (err) {
     console.error('GET /api/member-portfolios:', err);
