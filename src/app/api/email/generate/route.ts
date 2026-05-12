@@ -7,7 +7,7 @@ import {
 } from "@/lib/uddssaMailer";
 
 // Maximum allowed input length (characters) to prevent abuse.
-const MAX_INPUT_LENGTH = 10_000;
+const MAX_INPUT_LENGTH = 100_000;
 
 const VALID_MODES: ContentMode[] = ["manual", "ai_polish", "ai_draft"];
 

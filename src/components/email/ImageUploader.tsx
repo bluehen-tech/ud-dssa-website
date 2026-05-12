@@ -80,13 +80,7 @@ export default function ImageUploader({ onInsert, onClose }: ImageUploaderProps)
   const handleInsert = () => {
     if (!uploadedUrl) return;
 
-    const sizeParam = `?width=${selectedWidth}`;
-    const renderUrl = uploadedUrl.replace(
-      "/storage/v1/object/public/",
-      "/storage/v1/render/image/public/"
-    ) + sizeParam;
-
-    const md = `![${altText}](${renderUrl})`;
+    const md = `<img src="${uploadedUrl}" alt="${altText}" width="${selectedWidth}" />`;
     onInsert(md);
     onClose();
   };
