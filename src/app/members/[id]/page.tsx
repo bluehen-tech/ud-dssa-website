@@ -4,14 +4,21 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import type { MemberPortfolio } from '@/types/member';
+import type { MemberPortfolio, MemberRole } from '@/types/member';
 
 interface PortfolioApiResponse {
   success: boolean;
   message?: string;
   portfolio?: MemberPortfolio;
   status?: string;
+  role?: MemberRole;
 }
+
+const ROLE_LABELS: Record<MemberRole, string> = {
+  officer: 'Officer',
+  member: 'Current Member',
+  alumni: 'Alumni',
+};
 
 export default function MemberDetailPage() {
   const { isAdmin } = useAuth();
@@ -24,6 +31,9 @@ export default function MemberDetailPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
   const [rejectError, setRejectError] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<MemberRole>('member');
+  const [updatingRole, setUpdatingRole] = useState(false);
+  const [roleMessage, setRoleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -33,6 +43,7 @@ export default function MemberDetailPage() {
         if (data.success && data.portfolio) {
           setPortfolio(data.portfolio);
           setStatus(data.status || 'published');
+          setSelectedRole(data.portfolio.role);
         } else {
           setError('Portfolio not found');
         }
@@ -40,6 +51,35 @@ export default function MemberDetailPage() {
       .catch(() => setError('Failed to load'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const updateMemberRole = async () => {
+    if (!id || !isAdmin || !portfolio || selectedRole === portfolio.role) return;
+
+    setUpdatingRole(true);
+    setRoleMessage(null);
+    try {
+      const res = await fetch(`/api/member-portfolios/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: selectedRole }),
+      });
+      const data: PortfolioApiResponse = await res.json();
+      if (!res.ok || !data.success || !data.role) {
+        throw new Error(data.message || 'Failed to update membership status');
+      }
+
+      setPortfolio((current) => current ? { ...current, role: data.role! } : current);
+      setSelectedRole(data.role);
+      setRoleMessage({ type: 'success', text: `Moved to ${ROLE_LABELS[data.role]}.` });
+    } catch (e) {
+      setRoleMessage({
+        type: 'error',
+        text: e instanceof Error ? e.message : 'Failed to update membership status',
+      });
+    } finally {
+      setUpdatingRole(false);
+    }
+  };
 
   const rejectPortfolio = async () => {
     if (!id || !isAdmin) return;
@@ -97,7 +137,7 @@ export default function MemberDetailPage() {
         <div className="mb-6">
           <Link href="/members" className="text-blue-primary hover:underline text-sm">← Back to Members</Link>
         </div>
-        <div className="bg-white p-8 rounded-lg shadow-lg">
+        <div className="member-portfolio-enter bg-white p-8 rounded-lg shadow-lg">
           <div className="flex flex-col items-center text-center mb-6">
             {portfolio.profileImageUrl ? (
               <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden">
@@ -381,6 +421,46 @@ export default function MemberDetailPage() {
           {isAdmin && (
             <section className="pt-6 mt-6 border-t border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Admin Controls</h2>
+              <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <label htmlFor="membership-status" className="block text-sm font-semibold text-gray-900">
+                  Membership status
+                </label>
+                <p className="mt-1 text-sm text-gray-600">
+                  Move this portfolio to the correct section of the members directory.
+                </p>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <select
+                    id="membership-status"
+                    value={selectedRole}
+                    onChange={(e) => {
+                      setSelectedRole(e.target.value as MemberRole);
+                      setRoleMessage(null);
+                    }}
+                    disabled={updatingRole}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-primary focus:outline-none focus:ring-2 focus:ring-blue-primary/30 disabled:opacity-60"
+                  >
+                    <option value="officer">Officer</option>
+                    <option value="member">Current Member</option>
+                    <option value="alumni">Alumni</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={updateMemberRole}
+                    disabled={updatingRole || selectedRole === portfolio.role}
+                    className="rounded-md bg-blue-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {updatingRole ? 'Saving...' : 'Update status'}
+                  </button>
+                </div>
+                {roleMessage && (
+                  <p
+                    aria-live="polite"
+                    className={`mt-3 text-sm ${roleMessage.type === 'success' ? 'text-green-700' : 'text-red-600'}`}
+                  >
+                    {roleMessage.text}
+                  </p>
+                )}
+              </div>
               {status === 'published' ? (
                 <div className="space-y-3">
                   <p className="text-sm text-gray-700">

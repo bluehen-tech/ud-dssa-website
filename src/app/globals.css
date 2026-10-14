@@ -10,4 +10,90 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
-} 
+}
+
+.member-card {
+  background: linear-gradient(155deg, #eff6ff, #fff 45%);
+  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+
+.member-card-avatar,
+.member-card-arrow {
+  transition: transform 240ms ease;
+}
+
+/* Stretch the portfolio link across the card without nesting the social links. */
+.member-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 1rem;
+}
+
+.member-card-link:focus-visible {
+  outline: none;
+}
+
+.member-card-link:focus-visible::after {
+  outline: 3px solid #00539f;
+  outline-offset: 4px;
+}
+
+.member-card-socials a {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.member-card:focus-within {
+  border-color: #00539f;
+  box-shadow: 0 16px 32px -12px rgb(0 83 159 / 25%);
+}
+
+@media (hover: hover) {
+  .member-card:hover {
+    transform: translateY(-6px);
+    border-color: #00539f;
+    box-shadow: 0 20px 36px -12px rgb(0 83 159 / 25%);
+  }
+
+  .member-card:hover .member-card-avatar {
+    transform: scale(1.06) rotate(-3deg);
+  }
+
+  .member-card:hover .member-card-arrow {
+    transform: translateX(4px);
+  }
+}
+
+.member-card:has(.member-card-link:active) {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+
+.member-portfolio-enter {
+  animation: member-portfolio-reveal 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes member-portfolio-reveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-card,
+  .member-card-avatar,
+  .member-card-arrow {
+    transition: none;
+    transform: none !important;
+  }
+
+  .member-portfolio-enter {
+    animation: none;
+  }
+}
