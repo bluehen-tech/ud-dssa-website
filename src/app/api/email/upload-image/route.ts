@@ -5,6 +5,30 @@ const BUCKET = "email-images";
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
+const EXT_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/gif": "gif",
+  "image/webp": "webp",
+};
+
+/** Detect the real image type from the file's leading bytes (magic numbers). */
+function sniffImageType(b: Uint8Array): string | null {
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (
+    b.length >= 8 &&
+    b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
+    b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a
+  ) return "image/png";
+  if (b.length >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return "image/gif";
+  if (
+    b.length >= 12 &&
+    b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+    b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50
+  ) return "image/webp";
+  return null;
+}
+
 /**
  * POST /api/email/upload-image
  *
@@ -63,18 +87,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    // Trust the file's actual bytes, not the client-supplied type or filename.
+    const detectedType = sniffImageType(buffer);
+    if (!detectedType || !ALLOWED_TYPES.includes(detectedType)) {
+      return NextResponse.json(
+        { success: false, message: "File contents are not a valid jpg, png, gif or webp image" },
+        { status: 400 }
+      );
+    }
+
+    const ext = EXT_BY_TYPE[detectedType];
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).slice(2, 10);
     const filePath = `${timestamp}-${randomId}.${ext}`;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
-
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
       .upload(filePath, buffer, {
-        contentType: file.type,
+        contentType: detectedType,
         cacheControl: "31536000",
         upsert: false,
       });

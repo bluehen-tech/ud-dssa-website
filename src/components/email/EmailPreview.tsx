@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { marked } from "marked";
+import { markdownToEmailHtml } from "@/lib/emailMarkdown";
 
 interface EmailPreviewProps {
   subject: string;
@@ -10,8 +10,6 @@ interface EmailPreviewProps {
   previewName?: string;
   previewEmail?: string;
 }
-
-marked.setOptions({ breaks: true, gfm: true });
 
 const PREVIEW_TOKEN_REGEX = /\{(name|first_name|email)(?:\|([^}]*))?\}/g;
 
@@ -27,29 +25,6 @@ function personalise(text: string, name: string, email: string): string {
   });
 }
 
-/**
- * Client-side markdown to inline-styled HTML for preview.
- * Mirrors the server-side markdownToEmailHtml() from uddssaMailer.ts.
- */
-function markdownToPreviewHtml(markdown: string): string {
-  const rawHtml = marked.parse(markdown) as string;
-
-  return rawHtml
-    .replace(/<h1(.*?)>/g, '<h1 style="margin:0 0 16px;font-size:28px;font-weight:700;color:#1B365D;line-height:1.3;">')
-    .replace(/<h2(.*?)>/g, '<h2 style="margin:24px 0 12px;font-size:22px;font-weight:600;color:#1B365D;line-height:1.3;">')
-    .replace(/<h3(.*?)>/g, '<h3 style="margin:20px 0 8px;font-size:18px;font-weight:600;color:#1B365D;line-height:1.3;">')
-    .replace(/<p(.*?)>/g, '<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#333333;">')
-    .replace(/<ul(.*?)>/g, '<ul style="margin:0 0 16px;padding-left:24px;color:#333333;">')
-    .replace(/<ol(.*?)>/g, '<ol style="margin:0 0 16px;padding-left:24px;color:#333333;">')
-    .replace(/<li(.*?)>/g, '<li style="margin:0 0 8px;font-size:16px;line-height:1.5;">')
-    .replace(/<a /g, '<a style="color:#1B365D;font-weight:500;text-decoration:underline;" ')
-    .replace(/<hr\s*\/?>/g, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />')
-    .replace(/<blockquote(.*?)>/g, '<blockquote style="margin:16px 0;padding:12px 20px;border-left:4px solid #D4A020;background:#f8f9fa;font-style:italic;color:#555555;">')
-    .replace(/<img /g, '<img style="max-width:100%;height:auto;border-radius:8px;display:block;margin:16px auto;" ')
-    .replace(/<strong(.*?)>/g, '<strong style="font-weight:600;color:#1a1a1a;">')
-    .replace(/<em(.*?)>/g, '<em style="font-style:italic;">');
-}
-
 export default function EmailPreview({
   subject,
   body,
@@ -59,7 +34,7 @@ export default function EmailPreview({
 }: EmailPreviewProps) {
   const renderedBody = useMemo(() => {
     const personalised = personalise(body, previewName, previewEmail);
-    return markdownToPreviewHtml(personalised);
+    return markdownToEmailHtml(personalised);
   }, [body, previewName, previewEmail]);
 
   return (
