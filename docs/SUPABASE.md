@@ -89,67 +89,94 @@ https://bluehen-dssa.org
 
 **Note:** The code uses environment variables to dynamically determine the correct URL for each environment (see `src/lib/get-url.ts`).
 
-#### Email Templates
+#### Email Templates (6-digit code / OTP)
 
-The email template is configured in:
-- **Authentication** → **Email Templates** → **Magic Link**
+Members sign in with a **6-digit code**, not a magic link. Link-based auth emails were
+being flagged by spam filters (and UD's mail gateway pre-fetches links, which can
+consume the one-time token before the member clicks it). The `/login` page calls
+`supabase.auth.signInWithOtp({ shouldCreateUser: true })` and then
+`verifyOtp({ type: 'email' })`.
 
-**This Application Supports Both Magic Links and OTP:**
-This application supports both Magic Links and OTP (One-Time Password) authentication methods. According to the [Supabase documentation](https://supabase.com/docs/guides/auth/auth-email-passwordless), `signInWithOtp()` is used for both - the difference is determined by the email template content.
+**Important: Supabase uses two different templates for this one flow.**
 
-**Current Default: OTP** (to avoid spam filters flagging links)
+| Member state | Template used (Dashboard → Authentication → Email Templates) |
+|---|---|
+| **New member** (first sign-in; account is created) | **Confirm signup** |
+| **Returning member** | **Magic Link** |
 
-**OTP Template (Recommended - Default):**
+If only the *Magic Link* template is updated, returning members get a code but brand-new
+members get a link they can't use on the code-entry screen. **Both templates must render
+`{{ .Token }}` and must not contain `{{ .ConfirmationURL }}` or a `token_hash` link.**
+
+##### Step-by-step
+
+1. Supabase Dashboard → your project → **Authentication** → **Email Templates**.
+2. Open **Confirm signup**:
+   - Subject: `Your Blue Hen DSSA sign-in code: {{ .Token }}`
+   - Body: paste the template below.
+   - Save.
+3. Open **Magic Link**:
+   - Subject: `Your Blue Hen DSSA sign-in code: {{ .Token }}`
+   - Body: paste the same template below.
+   - Save.
+4. **Authentication** → **Providers** → **Email**: confirm **Enable Email provider** is on and
+   **Confirm email** is on (this is what routes new users through *Confirm signup*).
+   Leave **Secure email change** as-is.
+5. Test with an `@udel.edu` address that has **never** signed in, then again with one that has.
+   Both emails must show a 6-digit code and no link.
+
+##### Template (use for BOTH "Confirm signup" and "Magic Link")
+
+```html
+<div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+  <h2 style="color: #1B365D; margin: 0 0 12px;">Your Blue Hen DSSA sign-in code</h2>
+  <p style="margin: 0 0 16px;">Enter this code on the sign-in page to continue:</p>
+  <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center; padding: 20px; background: #f3f4f6; border-radius: 8px; margin: 0 0 16px;">
+    {{ .Token }}
+  </p>
+  <p style="margin: 0 0 8px;">This code expires in 1 hour and can only be used once.</p>
+  <p style="margin: 0; color: #555;">If you didn't request this, you can ignore this email. No one can sign in without the code.</p>
+</div>
 ```
-<h2>Log in to Blue Hen DSSA</h2>
-<p>Your one-time login code is:</p>
-<p style="font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
-  {{ .Token }}
-</p>
-<p>Enter this code on the login page to complete your sign-in.</p>
-<p>This code will expire in 1 hour.</p>
-<p>If you didn't request this code, you can ignore this email.</p>
-```
 
-**Magic Link Template (Alternative):**
-```
-<h2>Log in to Blue Hen DSSA</h2>
-<p>Your secure login link is ready:</p>
-<p>
-  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">
-    Click here to log in
-  </a>
-</p>
-<p>If you didn't request this link, you can ignore this email.</p>
-```
+Why this template is spam-filter friendly:
+- No hyperlinks, no tracking pixels, no images.
+- Short, plain subject that includes the code (helps on lock screens and in Outlook preview).
+- Plain inline styles only.
 
-**Key Points:**
-- ✅ Using `signInWithOtp()` method (works for both Magic Links and OTP)
-- ✅ **OTP Template:** Uses `{{ .Token }}` to display the 6-digit code (no links)
-- ✅ **Magic Link Template:** Uses `{{ .TokenHash }}` (PKCE flow for Magic Links)
-- ✅ **OTP:** User enters code manually in the login form
-- ✅ **Magic Link:** User clicks link in email (redirects to `/auth/confirm`)
-- ✅ OTP is less likely to be flagged by spam filters (no hyperlinks)
-- The authentication method can be changed in `src/app/login/page.tsx` via the `AUTH_METHOD` constant
-- Requires `/auth/confirm` route handler (already implemented)
+Do **not** add a "click here" fallback link to these templates; a single link is enough to
+reintroduce link pre-fetching and the spam-score penalty.
 
-**How It Works:**
-- `{{ .RedirectTo }}` contains the base URL from `emailRedirectTo` (e.g., `http://localhost:3001`)
-- Template appends `/auth/confirm?token_hash={{ .TokenHash }}&type=email`
-- Result: `http://localhost:3001/auth/confirm?token_hash=...&type=email` (dev)
-- Result: `https://bluehen-dssa.org/auth/confirm?token_hash=...&type=email` (prod)
-- Code passes just the base URL (no `/login`) to `emailRedirectTo` for simplicity
+##### Code expiry
 
-**Note:** The "otp_expired" error is misleading - it means the magic link token expired, not that you're using OTP. Magic Links and OTP share the same underlying system, but Magic Links use clickable links while OTP uses 6-digit codes.
+`{{ .Token }}` expiry is controlled by **Authentication** → **Providers** → **Email** →
+**Email OTP Expiration** (default 3600 s). If you change it, update the "expires in" text in
+the template above.
 
-**Alternative: Implicit Flow (Default)**
-If you want to use implicit flow instead, use the default template:
-```
-<h2>Magic Link</h2>
-<p>Follow this link to login:</p>
-<p><a href="{{ .ConfirmationURL }}">Log In</a></p>
-```
-> **Note:** If switching to implicit flow, also update `src/lib/supabase-browser.ts` to remove `flowType: 'pkce'`.
+##### Deliverability checklist (Resend SMTP)
+
+Supabase sends auth email through the custom SMTP configured at **Project Settings** →
+**Authentication** → **SMTP Settings** (Resend). The From domain matters more to spam filters
+than the email body does:
+
+1. In [Resend → Domains](https://resend.com/domains), the domain used in the SMTP
+   **Sender email** (e.g. `bluehen-dssa.org`) must show **Verified** with all DNS records
+   (DKIM, SPF/Return-Path, and ideally DMARC) green. Do not send from a Gmail/Outlook
+   address or from Resend's `onboarding@resend.dev`.
+2. Sender email should be a real mailbox or alias on that domain
+   (e.g. `no-reply@bluehen-dssa.org` with `RESEND_REPLY_TO` pointing at an officer inbox),
+   and **Sender name** should be `Blue Hen DSSA`.
+3. Add a DMARC record if missing: `_dmarc.bluehen-dssa.org TXT "v=DMARC1; p=none; rua=mailto:<officer email>"`.
+4. Use the same verified domain for member newsletters (`RESEND_FROM_*` in Vercel env) so
+   the domain builds one consistent reputation.
+5. Run a test send through [mail-tester.com](https://www.mail-tester.com) and aim for 9+/10.
+
+##### Legacy: magic-link handler
+
+`src/app/auth/confirm/route.ts` still exists and will exchange a `token_hash` link if one is
+ever sent, so an accidentally un-updated template fails gracefully rather than 404ing. It is
+not part of the normal sign-in flow and can be removed once both templates are confirmed to
+be code-only in production.
 
 ### 2. Environment Variables
 

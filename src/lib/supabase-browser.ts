@@ -26,6 +26,10 @@ function createMockSupabaseClient() {
         data: null,
         error: { message: 'Supabase is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file.' },
       }),
+      verifyOtp: async () => ({
+        data: { session: null, user: null },
+        error: { message: 'Supabase is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file.' },
+      }),
       onAuthStateChange: () => ({
         data: { subscription: null },
         unsubscribe: () => {},
@@ -85,7 +89,7 @@ function createMockSupabaseClient() {
   } as any;
 }
 
-export const createClient = () => {
+export const createClient = (): ReturnType<typeof createBrowserClient> => {
   // Return existing client if available
   if (supabaseClient) {
     return supabaseClient;
@@ -94,22 +98,23 @@ export const createClient = () => {
   // If Supabase is not configured, return a mock client
   if (!isSupabaseConfigured()) {
     console.warn('⚠️  Supabase is not configured. Running in demo mode. Some features may not work.');
-    supabaseClient = createMockSupabaseClient();
-    return supabaseClient;
+    const mockClient = createMockSupabaseClient();
+    supabaseClient = mockClient;
+    return mockClient;
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Create new client with proper browser configuration
-  // Using PKCE flow for magic links - matches custom email template that uses token_hash
-  // Email template redirects to /auth/confirm?token_hash={{ .TokenHash }}&type=email
+  // Create new client with proper browser configuration.
+  // Sign-in is via 6-digit email code (signInWithOtp + verifyOtp) — see src/app/login/page.tsx.
+  // PKCE is kept for /auth/callback code exchanges and the legacy /auth/confirm token_hash handler.
   supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      flowType: 'pkce', // PKCE flow required for custom email template with token_hash
+      flowType: 'pkce',
     },
     global: {
       headers: {
