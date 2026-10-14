@@ -149,6 +149,8 @@ function EmailPageContent() {
   const [sendResults, setSendResults] = useState<
     Array<{ email: string; success: boolean; detail: string }> | null
   >(null);
+  const [sentSlug, setSentSlug] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Recipients
   const [recipientsText, setRecipientsText] = useState("");
@@ -195,6 +197,8 @@ function EmailPageContent() {
   const handleSend = useCallback(async () => {
     setSendStatus(null);
     setSendResults(null);
+    setSentSlug(null);
+    setCopiedLink(false);
     setIsSending(true);
 
     try {
@@ -231,12 +235,32 @@ function EmailPageContent() {
       if (data.results) {
         setSendResults(data.results);
       }
+      if (data.slug) {
+        setSentSlug(data.slug);
+      }
     } catch {
       setSendStatus("Failed to reach the server.");
     } finally {
       setIsSending(false);
     }
   }, [generatedSubject, generatedBody, recipientsText, emailType, senderOverride]);
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!sentSlug) return;
+    const url = `${window.location.origin}/emails/${sentSlug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  }, [sentSlug]);
 
   const updateDraftField = (field: keyof AiDraftInput, value: string) => {
     setDraftInput((prev) => ({ ...prev, [field]: value }));
@@ -325,20 +349,31 @@ function EmailPageContent() {
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1B365D] to-[#243f6b] flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-[#D4A020]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1B365D] to-[#243f6b] flex items-center justify-center shadow-sm">
+                <svg className="w-6 h-6 text-[#D4A020]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Email Composer
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  Draft, polish, or compose Markdown emails for the mailing list.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/email/sent"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1B365D] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Email Composer
-              </h1>
-              <p className="text-gray-500 mt-1">
-                Draft, polish, or compose Markdown emails for the mailing list.
-              </p>
-            </div>
+              Sent Emails
+            </Link>
           </div>
         </div>
 
@@ -791,6 +826,95 @@ function EmailPageContent() {
                   }`}
                 >
                   {sendStatus}
+                </div>
+              )}
+
+              {/* Share card */}
+              {sentSlug && sendStatus?.includes("Failed: 0") && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#1B365D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    <h4 className="font-semibold text-[#1B365D]">Share this email</h4>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    This email is now a shareable web page. Copy the link below for social media posts.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${typeof window !== "undefined" ? window.location.origin : ""}/emails/${sentSlug}`}
+                      className="flex-1 bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-700 font-mono select-all"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyShareLink}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                        copiedLink
+                          ? "bg-green-600 text-white"
+                          : "bg-[#1B365D] text-white hover:bg-[#243f6b]"
+                      }`}
+                    >
+                      {copiedLink ? (
+                        <>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy Link
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 pt-1">
+                    <a
+                      href={`/emails/${sentSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#1B365D] hover:underline inline-flex items-center gap-1"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      View page
+                    </a>
+                    <span className="text-gray-300">|</span>
+                    <Link
+                      href="/email/sent"
+                      className="text-sm text-[#1B365D] hover:underline inline-flex items-center gap-1"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      All sent emails
+                    </Link>
+                    <span className="text-gray-300">|</span>
+                    <a
+                      href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/emails/${sentSlug}`)}&text=${encodeURIComponent(generatedSubject)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#1B365D] hover:underline"
+                    >
+                      Share on X
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/emails/${sentSlug}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#1B365D] hover:underline"
+                    >
+                      Share on LinkedIn
+                    </a>
+                  </div>
                 </div>
               )}
 

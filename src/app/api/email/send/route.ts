@@ -7,6 +7,7 @@ import {
   type EmailType,
 } from "@/lib/uddssaMailer";
 import { getBaseURL } from "@/lib/get-url";
+import { generateEmailSlug, deduplicateSlug } from "@/lib/email-slug";
 
 // ── Sender address resolution ─────────────────────────────────────────────
 
@@ -264,12 +265,49 @@ export async function POST(request: NextRequest) {
     const sent = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
+    // ── Persist to sent_emails (fire-and-forget) ────────────────────────
+    let emailSlug: string | null = null;
+    if (sent > 0) {
+      try {
+        const baseSlug = generateEmailSlug(subject!.trim());
+
+        const { data: existing } = await supabase
+          .from("sent_emails")
+          .select("slug")
+          .like("slug", `${baseSlug}%`);
+
+        const existingSlugs = (existing || []).map((r: { slug: string }) => r.slug);
+        emailSlug = deduplicateSlug(baseSlug, existingSlugs);
+
+        const SENDER_LABELS: Record<string, string> = {
+          newsletter: "DSSA Newsletter",
+          event: "DSSA Events",
+          opportunity: "DSSA Opportunities",
+          announcement: "DSSA Announcements",
+        };
+
+        await supabase.from("sent_emails").insert({
+          slug: emailSlug,
+          subject: subject!.trim(),
+          body_markdown: bodyTemplate!,
+          email_type: effectiveEmailType,
+          sender_label: SENDER_LABELS[effectiveEmailType] || effectiveEmailType,
+          recipient_count: sent,
+          sent_by: user.id,
+          published: true,
+        });
+      } catch (archiveErr) {
+        console.error("[POST /api/email/send] Failed to archive email:", archiveErr);
+      }
+    }
+
     return NextResponse.json({
       success: failed === 0,
       message: `Sent: ${sent}, Failed: ${failed}`,
       sent,
       failed,
       results,
+      slug: emailSlug,
     });
   } catch (err: unknown) {
     const message =
