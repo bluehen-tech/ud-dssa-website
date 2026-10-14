@@ -122,11 +122,9 @@ export default function MembersPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {currentMembers.map((member) => (
-              <Link key={member.id} href={`/members/${member.id}`} className="block focus:outline-none focus:ring-2 focus:ring-blue-primary focus:ring-offset-2 rounded-lg">
-                <MemberCard member={member} />
-              </Link>
+              <MemberCard key={member.id} member={member} />
             ))}
           </div>
         )}
@@ -146,11 +144,14 @@ export default function MembersPage() {
 }
 
 function MemberCard({ member }: { member: MemberPortfolio }) {
+  const skills = member.skills.flatMap((category) => category.items);
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-gray-200 hover:border-blue-primary">
-      <div className="flex flex-col items-center text-center mb-4">
+    <article className="member-card relative isolate flex h-[30rem] w-full max-w-[22rem] min-w-0 flex-col rounded-2xl border border-gray-200 p-6 shadow-md">
+      <div aria-hidden="true" className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-gradient-to-r from-blue-primary via-blue-400 to-gold" />
+      <div className="mb-4 flex h-40 shrink-0 flex-col items-center text-center">
         {member.profileImageUrl ? (
-          <div className="w-24 h-24 rounded-full bg-gray-200 mb-3 overflow-hidden">
+          <div className="member-card-avatar mb-2 h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gray-200 ring-4 ring-white shadow-md">
             <img
               src={member.profileImageUrl}
               alt={member.name}
@@ -158,61 +159,57 @@ function MemberCard({ member }: { member: MemberPortfolio }) {
             />
           </div>
         ) : (
-          <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+          <div className="member-card-avatar mb-2 flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-blue-100 ring-4 ring-white shadow-md">
             <span className="text-3xl font-bold text-blue-primary">
               {member.name.charAt(0).toUpperCase()}
             </span>
           </div>
         )}
         
-        <h3 className="text-xl font-bold text-blue-primary mb-1">
+        <h3 className="mb-1 w-full shrink-0 truncate text-xl font-bold text-blue-primary" title={member.name}>
           {member.name}
         </h3>
         
         {member.position && (
-          <p className="text-sm font-semibold text-gray-700 mb-1">
+          <p className="w-full line-clamp-2 break-words text-sm font-medium text-gray-600">
             {member.position}
-          </p>
-        )}
-        
-        {member.tagline && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {member.tagline}
           </p>
         )}
       </div>
 
-      {member.bio && (
-        <p className="text-sm text-gray-700 mb-4 line-clamp-3">
-          {member.bio}
+      <div className="mb-4 h-[3.75rem] shrink-0">
+        <p className="line-clamp-3 break-words text-sm leading-5 text-gray-600">
+          {member.tagline || member.bio}
         </p>
-      )}
+      </div>
 
-      {member.skills && member.skills.length > 0 && (
-        <div className="mb-4">
-          <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-            Skills
-          </h4>
-          <div className="flex flex-wrap gap-1">
-            {member.skills.slice(0, 2).map((skillCategory, idx) => (
-              <div key={idx} className="flex flex-wrap gap-1">
-                {skillCategory.items.slice(0, 3).map((skill, skillIdx) => (
-                  <span
-                    key={skillIdx}
-                    className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="h-[5.25rem] shrink-0 overflow-hidden">
+        {skills.length > 0 && (
+          <>
+            <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+              Skills
+            </h4>
+            <div className="flex flex-wrap gap-1" aria-label={`${skills.length} skills; view the full portfolio for all skills`}>
+              {skills.slice(0, 3).map((skill, index) => (
+                <span key={index} className="max-w-[calc(50%-2px)] truncate rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-primary">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
 
-      {member.links && (
-        <div className="flex justify-center gap-3 pt-4 border-t border-gray-200">
-          {member.links.linkedin && (
+      <div className="mt-auto border-t border-gray-200 pt-3">
+        <Link href={`/members/${member.id}`} className="member-card-link flex items-center justify-between text-sm font-semibold text-blue-primary" aria-label={`View ${member.name}'s full portfolio`}>
+          View full portfolio
+          <svg aria-hidden="true" className="member-card-arrow h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
+          </svg>
+        </Link>
+
+        <div className="member-card-socials mt-2 flex h-8 justify-center gap-2">
+          {member.links?.linkedin && (
             <a
               href={member.links.linkedin}
               target="_blank"
@@ -225,7 +222,7 @@ function MemberCard({ member }: { member: MemberPortfolio }) {
               </svg>
             </a>
           )}
-          {member.links.github && (
+          {member.links?.github && (
             <a
               href={member.links.github}
               target="_blank"
@@ -238,7 +235,7 @@ function MemberCard({ member }: { member: MemberPortfolio }) {
               </svg>
             </a>
           )}
-          {member.links.website && (
+          {member.links?.website && (
             <a
               href={member.links.website}
               target="_blank"
@@ -251,7 +248,7 @@ function MemberCard({ member }: { member: MemberPortfolio }) {
               </svg>
             </a>
           )}
-          {member.links.email && (
+          {(member.contactPreferences?.allowPublicEmail ?? true) && member.links?.email && (
             <a
               href={`mailto:${member.links.email}`}
               className="text-gray-600 hover:text-gray-800 transition-colors"
@@ -263,8 +260,8 @@ function MemberCard({ member }: { member: MemberPortfolio }) {
             </a>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </article>
   );
 }
 
