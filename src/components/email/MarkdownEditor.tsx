@@ -1,7 +1,13 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import ImageUploader from "./ImageUploader";
+import {
+  altFromFilename,
+  buildImageHtml,
+  uploadEmailImage,
+  validateImageFile,
+} from "@/lib/emailImages";
 
 interface MarkdownEditorProps {
   value: string;
@@ -40,6 +46,72 @@ function insertAtCursor(
 export default function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showImageUploader, setShowImageUploader] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+
+  // Async uploads finish after renders, so read the latest value through a ref.
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  // Upload pasted/dropped images, then insert them in order at the original cursor.
+  const uploadAndInsert = useCallback(
+    async (files: File[]) => {
+      const ta = textareaRef.current;
+      const cursor = ta ? ta.selectionStart : valueRef.current.length;
+      setUploadErrors([]);
+
+      const valid: File[] = [];
+      const errors: string[] = [];
+      for (const file of files) {
+        const problem = validateImageFile(file);
+        if (problem) errors.push(problem);
+        else valid.push(file);
+      }
+
+      setPendingUploads((n) => n + valid.length);
+      const results = await Promise.all(
+        valid.map(async (file) => {
+          try {
+            const url = await uploadEmailImage(file);
+            return buildImageHtml({ url, alt: altFromFilename(file.name), width: 320 });
+          } catch (err: unknown) {
+            errors.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed"}`);
+            return null;
+          } finally {
+            setPendingUploads((n) => n - 1);
+          }
+        })
+      );
+
+      const html = results.filter((r): r is string => r !== null);
+      if (html.length) {
+        const current = valueRef.current;
+        const pos = Math.min(cursor, current.length);
+        onChange(current.slice(0, pos) + "\n" + html.join("\n\n") + "\n" + current.slice(pos));
+      }
+      setUploadErrors(errors);
+    },
+    [onChange]
+  );
+
+  const imageFilesFrom = (list: FileList | null): File[] =>
+    Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = imageFilesFrom(e.clipboardData.files);
+    if (!files.length) return; // plain text paste: let the browser handle it
+    e.preventDefault();
+    uploadAndInsert(files);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    const files = imageFilesFrom(e.dataTransfer.files);
+    if (!files.length) return;
+    e.preventDefault();
+    uploadAndInsert(files);
+  };
 
   const handleImageInsert = useCallback(
     (markdown: string) => {
@@ -148,11 +220,28 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onPaste={handlePaste}
+        onDrop={handleDrop}
+        onDragOver={(e) => {
+          if (Array.from(e.dataTransfer.types).includes("Files")) e.preventDefault();
+        }}
         placeholder={placeholder || "Write your email in Markdown...\n\n## Heading\n**Bold** and *italic*\n- List items\n---"}
         rows={16}
         className="w-full px-4 py-3 text-sm font-mono text-gray-800 resize-y focus:outline-none placeholder:text-gray-400"
         style={{ minHeight: "320px" }}
       />
+
+      {/* Paste/drop upload status */}
+      {(pendingUploads > 0 || uploadErrors.length > 0) && (
+        <div className="px-4 py-2 border-t border-gray-200 text-xs space-y-1">
+          {pendingUploads > 0 && (
+            <p className="text-gray-500">Uploading {pendingUploads} image{pendingUploads === 1 ? "" : "s"}...</p>
+          )}
+          {uploadErrors.map((err) => (
+            <p key={err} className="text-red-600">{err}</p>
+          ))}
+        </div>
+      )}
 
       {/* Image uploader modal */}
       {showImageUploader && (
