@@ -10,6 +10,12 @@ import { Event } from '@/types/event';
 import { createClient } from '@/lib/supabase-browser';
 import { useAuth } from '@/contexts/AuthContext';
 import { recordToOpportunity } from '@/utils/opportunityTransforms';
+import { QRCodeSVG } from 'qrcode.react';
+import { getBaseURL } from '@/lib/get-url';
+
+// URL encoded in the "Get Connected" QR code. Always points at the canonical site
+// so it works when the page is projected at events or printed on flyers.
+const GET_CONNECTED_URL = `${getBaseURL()}/?src=qr#contact-form`;
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -431,6 +437,31 @@ export default function Home() {
           <p className="text-lg text-gray-600 mb-6">
             Whether you're a graduate student showcasing your projects, discovering events, and building infrastructure, or an industry professional looking to collaborate with UD's graduate talent and develop opportunities, UD-DSSA has something for you.
           </p>
+
+          {/* Get Connected QR code — for projected screens and tabling; hidden on phones (they're already here) */}
+          <div className="hidden sm:flex items-center justify-center gap-5 mx-auto max-w-md rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-left">
+            <a
+              href={GET_CONNECTED_URL}
+              className="shrink-0 rounded-xl bg-white p-2 shadow-md"
+              aria-label="QR code linking to the Get Connected form"
+            >
+              <QRCodeSVG
+                value={GET_CONNECTED_URL}
+                size={112}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#00539F"
+                marginSize={1}
+              />
+            </a>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-primary">Scan to get connected</p>
+              <p className="text-sm text-gray-600">
+                Point your phone's camera at the code to open this form on your phone.
+              </p>
+              <p className="text-xs font-mono text-gray-500 break-all">{GET_CONNECTED_URL.replace(/^https?:\/\//, '').replace('?src=qr', '')}</p>
+            </div>
+          </div>
         </div>
 
         {/* Contact Form */}
