@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ClientQuestion } from '@/lib/learn/types';
 
@@ -24,6 +24,16 @@ export default function ConceptCheck({
   const [missedConcepts, setMissedConcepts] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Passing swaps this check for the build card without leaving the page. This component is removed
+  // at that moment, so that is when to bring the learner to the top, where the change is visible.
+  const justPassed = useRef(false);
+  useEffect(
+    () => () => {
+      if (justPassed.current) window.scrollTo(0, 0);
+    },
+    []
+  );
+
   const isWelcome = questions.length === 0;
   const allAnswered = questions.every((q) => answers[q.id]);
 
@@ -40,6 +50,7 @@ export default function ConceptCheck({
       const data: CheckResponse = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'The check could not be saved. Try again.');
       if (data.passed) {
+        justPassed.current = true;
         router.refresh();
         return;
       }

@@ -14,6 +14,7 @@ import { wordsForStage } from '@/content/learn/glossary';
 import StackMap from '@/components/learn/StackMap';
 import ConceptCheck from '@/components/learn/ConceptCheck';
 import GithubUsernameForm from '@/components/learn/GithubUsernameForm';
+import TickMemory from '@/components/learn/TickMemory';
 
 export const dynamic = 'force-dynamic';
 
@@ -150,7 +151,12 @@ export default async function StagePage({ params }: { params: { stage: string } 
             </div>
           )}
 
-          <LessonMarkdown content={stage.build} replacements={{ githubUsername: username || 'your-username' }} />
+          <LessonMarkdown
+            id="build-card"
+            content={stage.build}
+            replacements={{ githubUsername: username || 'your-username' }}
+          />
+          <TickMemory targetId="build-card" storageKey={`learn-ticks:${state.userId}:${stage.id}`} />
 
           {(stage.id === 2 || stage.id === 7) && (
             <div className="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4">

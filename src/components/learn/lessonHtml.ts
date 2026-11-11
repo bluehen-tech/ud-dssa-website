@@ -30,6 +30,8 @@ export interface LessonHtmlOptions {
 export const WORD_CLASSES =
   'cursor-help rounded-sm underline decoration-dotted decoration-2 decoration-blue-primary underline-offset-4 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-primary';
 
+const CHECKBOX_CLASSES = 'mr-1 h-4 w-4 cursor-pointer align-[-2px] accent-blue-primary';
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -110,7 +112,21 @@ function createMarked(skipHref?: string): Marked {
     },
   };
 
-  return new Marked({ gfm: true }).use({ extensions: [block, word] });
+  return new Marked({ gfm: true }).use({
+    extensions: [block, word],
+    renderer: {
+      // A "- [ ]" item is a box for the learner to tick. Markdown's own version cannot be clicked.
+      // <TickMemory /> remembers which boxes are ticked.
+      checkbox({ checked }) {
+        return `<input type="checkbox"${checked ? ' checked=""' : ''} class="${CHECKBOX_CLASSES}"> `;
+      },
+      // The label makes the item's text tick the box too, and names the box for screen readers.
+      listitem(item) {
+        if (!item.task) return false;
+        return `<li class="list-none -ml-6"><label class="cursor-pointer">${this.parser.parse(item.tokens)}</label></li>\n`;
+      },
+    },
+  });
 }
 
 export function renderLessonHtml(content: string, options: LessonHtmlOptions = {}): string {

@@ -18,7 +18,7 @@ export default function LessonMarkdown({
   return (
     <div
       id={id}
-      className={`prose prose-slate max-w-none prose-headings:text-blue-primary prose-a:text-blue-primary ${INLINE_CODE}`}
+      className={`prose prose-slate max-w-none prose-headings:text-blue-primary prose-a:text-blue-primary prose-img:rounded-lg prose-img:border prose-img:border-gray-200 ${INLINE_CODE}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

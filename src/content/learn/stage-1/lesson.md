@@ -21,10 +21,14 @@ GitHub offers Copilot free to verified students. Check github.com/education for 
 
 ## The four parts of the Cursor window
 
-- **File explorer**, on the left: every folder and file in your project.
-- **Editor**, in the middle: the file you are reading or changing.
-- **Agent panel**, on the right: where you ask the agent for a change.
-- **Terminal**, at the bottom: where you type commands.
+1. **File explorer**, on the left: every folder and file in your project.
+2. **Editor**, in the middle: the file you are reading or changing.
+3. **Agent panel**, on the right: where you ask the agent for a change.
+4. **Terminal**, at the bottom: where you type commands.
+
+![The Cursor window with its four parts numbered. 1 is the file explorer on the left. 2 is the editor in the middle. 3 is the agent panel on the right. 4 is the terminal at the bottom.](/images/learn/cursor-four-parts.png)
+
+The numbers in the picture match the list. The picture is from another project, so the files on the left and the page in the middle will differ from yours. The four parts are in the same places.
 
 ## The terminal
 

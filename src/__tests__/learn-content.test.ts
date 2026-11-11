@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { STAGES } from "@/content/learn/stages";
 import { GLOSSARY, findWord, type GlossaryEntry } from "@/content/learn/glossary";
@@ -87,6 +89,23 @@ describe("Builder Path lessons and build cards", () => {
       expect(html, `${doc.name}: a ::: block is not closed`).not.toContain(":::");
       expect(html, `${doc.name}: a [[word]] did not render`).not.toContain("[[");
       expect(html, `${doc.name}: a {{placeholder}} was not filled`).not.toContain("{{");
+    }
+  });
+
+  it("draw checklist items as boxes the learner can tick", () => {
+    const html = renderLessonHtml("- [ ] First\n- [x] Second\n- Plain");
+    expect(html.match(/type="checkbox"/g)).toHaveLength(2);
+    expect(html).not.toContain("disabled");
+    expect(html).toContain("<label");
+    expect(html).toContain("<li>Plain</li>");
+  });
+
+  it("point each picture at a file in public/ and describe it", () => {
+    for (const doc of documents) {
+      for (const [, alt, src] of Array.from(doc.text.matchAll(/!\[([^\]]*)\]\(([^)\s]+)\)/g))) {
+        expect(alt.trim(), `${doc.name}: the picture ${src} has no description`).not.toBe("");
+        expect(existsSync(join(process.cwd(), "public", src)), `${doc.name}: ${src} is not in public/`).toBe(true);
+      }
     }
   });
 

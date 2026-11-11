@@ -14,7 +14,9 @@
 - Open Cursor. Sign in or create a free account.
 
 :::more If Cursor opens with only a chat box and no file list
-Look for the option to open the editor. It may be labeled IDE. The build cards use the editor.
+Look for the option to open the editor. It may be labeled IDE, in the upper-right corner. The build cards use the editor.
+
+![Cursor open with only a chat box. A red arrow points to the IDE button in the upper-right corner.](/images/learn/cursor-open-editor.png)
 :::
 
 ## 3. Make a code folder

@@ -46,6 +46,10 @@ Leave a blank line before and after each block. Blocks cannot sit inside each ot
 
 Use `[[word]]` the first time a lesson or build card uses a word from an earlier stage. Do not mark the word in the stage that teaches it. Define it in bold there instead.
 
+A `- [ ]` item is a box the learner can tick. The site remembers ticks in the learner's browser.
+
+To add a picture, put the file in `public/images/learn/` and write `![What the picture shows](/images/learn/file-name.png)`. The description is read aloud to learners who cannot see the picture, and it follows the same word rules as the lesson. Crop out names, email addresses and anything else private before you add a screenshot.
+
 ## Sample at the target length and tone
 
 > **Git** saves versions of your project on your laptop. Each saved version is a **commit**. **GitHub** is a website that keeps a copy of your commits online.
