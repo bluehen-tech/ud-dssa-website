@@ -10,7 +10,9 @@ function HandoutCard() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">DSSA @ UD · Builders Day</p>
           <h1 className="text-4xl font-bold text-blue-primary">Builder Path</h1>
-          <p className="mt-1 text-lg text-gray-700">A beginner route into the tools behind bluehen-dssa.org.</p>
+          <p className="mt-1 text-lg text-gray-700">
+            Learn how bluehen-dssa.org works by building a small site of your own. No coding experience needed.
+          </p>
         </div>
         <div className="shrink-0 text-center">
           <QRCodeSVG value={LEARN_FULL_URL} size={120} level="M" fgColor="#00539F" />
@@ -26,13 +28,13 @@ function HandoutCard() {
         <li>Sign in with your @udel.edu email.</li>
         <li>Publish your member portfolio with a photo. The path unlocks.</li>
         <li>Work through seven stages at your own pace. Each has a short lesson, a concept check and a build card.</li>
-        <li>Finish by adding a tip to the DSSA site with your first pull request.</li>
+        <li>Finish by adding your own tip for beginners to the DSSA site.</li>
       </ol>
 
       <div className="border-t border-gray-200 pt-3 text-sm text-gray-600">
         <p>
-          <strong className="text-gray-800">You need:</strong> a Windows or Mac laptop you can install apps on. The
-          accounts you will make are free: Cursor, GitHub, Vercel and Supabase.
+          <strong className="text-gray-800">You need:</strong> a Windows or Mac laptop you can install apps on.
+          Everything you install and every account you make is free.
         </p>
         <p className="mt-1">Not for credit. Your member card shows how many stages you have cleared.</p>
       </div>

@@ -3,7 +3,7 @@ import type { Question } from '@/lib/learn/types';
 export const stage3Questions: Question[] = [
   {
     id: 's3-localhost',
-    concept: 'Your laptop copy and the production copy',
+    concept: 'Two copies of your site',
     prompt: 'Who can see your site at localhost:3000?',
     answer: 'Only you, on your laptop',
     wrong: ['Anyone with the link', "Anyone on UD's network", 'Anyone, once you push'],
@@ -11,7 +11,7 @@ export const stage3Questions: Question[] = [
   {
     id: 's3-push-deploys',
     concept: 'How a push becomes live',
-    prompt: 'You push a commit to main. What does Vercel do?',
+    prompt: 'You push a commit to GitHub. What does Vercel do?',
     answer: 'Builds the new code and puts it live, in a minute or two',
     wrong: [
       'Nothing, until you upload the files by hand',

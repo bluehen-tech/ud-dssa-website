@@ -2,11 +2,13 @@ The steps below use your GitHub username, **{{githubUsername}}**. If that is wro
 
 ## 1. Practice in your own repo
 
-In Cursor, open `my-dssa-site`. In the terminal:
+In Cursor, open `my-dssa-site`. In the [[terminal]]:
 
 ```
 git switch -c practice-pr
 ```
+
+This makes a new branch named `practice-pr` and moves you onto it.
 
 Ask the agent for one small change, such as "Change the footer text to my name. Change nothing else." Read the diff, then:
 
@@ -24,6 +26,8 @@ Back in the terminal:
 git switch main
 git pull
 ```
+
+The first line moves you back to `main`. The second downloads the merged change from GitHub.
 
 Do this now: open your `.vercel.app` site. The footer change should be live.
 

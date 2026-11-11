@@ -7,6 +7,8 @@
 
 ## 2. Create a table
 
+**SQL** is the language for giving a database instructions. You do not need to write it. You paste it.
+
 In your project, open **SQL Editor** and click **New query**. Paste this and click **Run**:
 
 ```sql
@@ -24,13 +26,13 @@ create policy "Anyone can sign up"
   with check (true);
 ```
 
-The first part creates the table. The last two parts turn on row-level security and allow visitors to add a row. Visitors cannot read anyone's rows. Stage 6 explains row-level security.
+The first part creates the table, with four columns. The last two parts turn on [[row-level security]] and add one rule: visitors may add a row. No rule lets them read rows, so they cannot. Stage 6 explains this.
 
 Do this now: open **Table Editor**. You should see a `signups` table with no rows.
 
 ## 3. Add your keys
 
-In Supabase, open **Project Settings > API Keys**. Find the **Project URL** and the **publishable** key. Older projects call it the **anon** key.
+In Supabase, open **Project Settings > API Keys**. Find the **Project URL**, which is your project's web address, and the **publishable** key. Older projects call it the **anon** key.
 
 In Cursor's terminal, in `my-dssa-site`, copy the example file:
 
@@ -53,8 +55,8 @@ Do this now: submit the form on localhost:3000. In Supabase **Table Editor**, op
 
 ## 5. Put it live
 
-- In Vercel, open your project, then **Settings > Environment Variables**.
-- Add the same two names and values from `.env.local`.
+- In [[Vercel]], open your project, then **Settings > Environment Variables**.
+- Add the same two names and values from `.env.local`. The live site cannot see that file, so it needs its own copy.
 - Commit and push your code:
 
 ```
@@ -69,7 +71,7 @@ Do this now: submit the form on your `.vercel.app` site. A second row should app
 
 ## Done when
 
-- [ ] The `signups` table exists with row-level security on
+- [ ] The `signups` table exists, and the SQL ran with no error
 - [ ] `.env.local` holds your keys, and `git status` does not list it
 - [ ] The form on localhost added a row
 - [ ] The form on your live site added a row

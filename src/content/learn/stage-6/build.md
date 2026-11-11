@@ -2,7 +2,7 @@ There is nothing to deploy in this stage. You read the real code with the agent'
 
 ## 1. Get a copy of the DSSA code
 
-In Cursor's terminal, go to your `code` folder and run:
+In Cursor's [[terminal]], go to your `code` folder and [[clone]] the DSSA [[repo]]:
 
 ```
 git clone https://github.com/bluehen-tech/ud-dssa-website.git

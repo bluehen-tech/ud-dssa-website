@@ -1,19 +1,36 @@
 # Your toolkit
 
-**Cursor** is a code editor with an AI agent built in. You ask the agent for a change in plain words. It edits your files, and you check what it did.
+:::short
+- **Cursor** is an app for writing code. It has an AI helper built in, called the **agent**.
+- You ask the agent for a change in plain words. It edits your files, and you check what it did.
+- The **terminal** is a window where you type commands and the computer answers in text.
+- Keep your projects in a plain folder on your laptop, not in a cloud drive.
+:::
 
-The **terminal** is a window where you type commands. The computer answers in text. Cursor has a terminal built in, at the bottom of its window.
+## Cursor and the agent
 
-## Already use VS Code?
+Code is kept in text files. An app for reading and changing those files is called an **editor**. **Cursor** is an editor with an AI helper built in. The helper is called the **agent**.
 
-That is fine. Cursor is built on VS Code, and GitHub Copilot's agent mode works the same way. Some buttons and menu names will differ from the steps here, but the work is the same: ask for one small change, read what changed, then keep it or undo it. GitHub offers Copilot free to verified students. Check github.com/education for details.
+You ask the agent for a change in plain words. It edits your files, and you check what it did.
+
+:::more Already use VS Code with Copilot? That works too
+You do not have to switch. Cursor is built on VS Code, and GitHub Copilot's agent mode works the same way. Some buttons and menu names will differ from the steps here, but the work is the same: ask for one small change, read what changed, then keep it or undo it.
+
+GitHub offers Copilot free to verified students. Check github.com/education for details.
+:::
 
 ## The four parts of the Cursor window
 
 - **File explorer**, on the left: every folder and file in your project.
 - **Editor**, in the middle: the file you are reading or changing.
-- **Agent panel**, on the right: where you ask the AI for a change.
-- **Terminal**, at the bottom: where you type commands such as `npm run dev`.
+- **Agent panel**, on the right: where you ask the agent for a change.
+- **Terminal**, at the bottom: where you type commands.
+
+## The terminal
+
+A **command** is a short line of text that tells the computer to do one thing. The **terminal** is a window where you type commands. The computer answers in text.
+
+You will type a few commands in each stage. The build cards give you each one to copy.
 
 ## Four terminal commands
 
@@ -24,7 +41,7 @@ That is fine. Cursor is built on VS Code, and GitHub Copilot's agent mode works 
 | `cd` | Moves into another folder |
 | `mkdir` | Creates a new folder |
 
-These work in the Windows terminal (PowerShell) and in the Mac terminal.
+These four work on Windows and on Mac.
 
 ## Working with the agent
 
@@ -37,15 +54,19 @@ These work in the Windows terminal (PowerShell) and in the Mac terminal.
 
 Put your projects in a folder on your laptop, such as `code` in your home folder. Do not put them in OneDrive, iCloud Drive, Dropbox or Google Drive. Those apps copy files while tools are still writing them, and projects break.
 
-## Accounts you will need
+## Accounts
 
-Each of these is free and needs no credit card.
+You will make four free accounts along the way. Each build card tells you when. None needs a credit card.
 
+:::more The four accounts
 | Account | First used in | What it is for |
 | --- | --- | --- |
-| Cursor | Stage 1 | The editor and its AI agent |
-| GitHub | Stage 2 | Keeps your code online |
-| Vercel | Stage 3 | Puts your site on the web |
-| Supabase | Stage 5 | Your database |
+| Cursor | Stage 1 | Writing code with the agent |
+| GitHub | Stage 2 | Keeping your code online |
+| Vercel | Stage 3 | Putting your site on the web |
+| Supabase | Stage 5 | Keeping your site's data |
+:::
 
-Cursor's free plan includes a limited number of AI requests each month. Check the pricing page at cursor.com for the current limit and for any student offer. Small, clear requests use fewer of them.
+:::more Cursor's free plan
+The free plan includes a limited number of agent requests each month. Check the pricing page at cursor.com for the current limit and for any student offer. Small, clear requests use fewer of them.
+:::

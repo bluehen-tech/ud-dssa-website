@@ -4,7 +4,7 @@ import type { Question } from '@/lib/learn/types';
 export const stage2Questions: Question[] = [
   {
     id: 's2-git-vs-github',
-    concept: 'Git saves versions on your laptop. GitHub keeps a copy online.',
+    concept: 'Why save versions: Git is on your laptop, GitHub is online',
     prompt: 'Which statement is right?',
     answer: 'Git saves versions on your laptop. GitHub keeps a copy of them online.',
     wrong: [
@@ -15,7 +15,7 @@ export const stage2Questions: Question[] = [
   },
   {
     id: 's2-push',
-    concept: 'Six words: push',
+    concept: 'Five words: push',
     prompt: 'You made a commit. When does it appear on GitHub?',
     answer: 'After you run git push',
     wrong: ['Right away. Commits are always online.', 'After you run git add', 'After you close Cursor'],
@@ -30,7 +30,7 @@ export const stage2Questions: Question[] = [
   {
     id: 's2-secret-in-diff',
     concept: 'Secrets are never committed',
-    prompt: "The agent's diff puts your database key in page.tsx. What do you do?",
+    prompt: "The agent's diff puts your database key in one of your page files. What do you do?",
     answer: 'Reject that change. Keys go in .env.local, which is never committed.',
     wrong: [
       'Accept and commit it. The repo is yours.',

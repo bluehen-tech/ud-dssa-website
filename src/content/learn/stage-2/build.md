@@ -9,7 +9,7 @@ Type it in the box below this card and click Save. The site checks that the acco
 ## 3. Install Git
 
 - **Windows:** go to [git-scm.com/downloads](https://git-scm.com/downloads), download Git for Windows, and run the installer. The default options are fine.
-- **Mac:** open the terminal and run `git --version`. If Git is not installed, macOS offers to install it. Click Install.
+- **Mac:** open the [[terminal]] and run `git --version`. If Git is not installed, macOS offers to install it. Click Install.
 
 Do this now: close Cursor fully and open it again. In a new terminal, run `git --version`. You should see something like `git version 2.47.0`.
 
@@ -22,6 +22,8 @@ git config --global user.name "Your Name"
 git config --global user.email "you@udel.edu"
 git config --global init.defaultBranch main
 ```
+
+Git puts this name on each commit you make.
 
 Do this now: run `git config --global --list`. You should see your name and email.
 
@@ -49,11 +51,13 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. You should see the DSSA starter page.
+**npm** is a tool that came with Node.js. The first command downloads the code the starter depends on. It can take a minute. The second command starts the site on your laptop and keeps it running.
+
+Open [http://localhost:3000](http://localhost:3000) in your browser, such as Chrome, Safari or Edge. **localhost** is the address of a site running on your own laptop, so only you can open it. You should see the DSSA starter page.
 
 ## 8. Make your first commit
 
-Ask the agent:
+Ask the [[agent]]:
 
 > Change the main heading on the home page to my name, which is ___. Change nothing else.
 
@@ -67,7 +71,11 @@ git commit -m "Put my name on the home page"
 git push
 ```
 
-The first time you push, Git asks you to sign in to GitHub. Follow the prompt in your browser. If the terminal asks for a password, ask the agent: "Help me sign in to GitHub so git push works."
+The first time you push, Git asks you to sign in to GitHub. Follow the prompt in your browser.
+
+:::more If the terminal asks for a password
+Ask the agent: "Help me sign in to GitHub so git push works."
+:::
 
 Do this now: refresh your repo page on GitHub. Your commit message should appear at the top of the file list.
 

@@ -1,12 +1,16 @@
 ## 1. Check the build on your laptop
 
-In Cursor's terminal, in `my-dssa-site`, run:
+In Cursor's [[terminal]], in `my-dssa-site`, run:
 
 ```
 npm run build
 ```
 
-Do this now: read the last lines. They should list your pages with no red error text. If there is an error, copy it into the agent panel and ask what it means.
+Do this now: read the last lines. They should list your pages with no red error text.
+
+:::more If the build shows an error
+Copy the whole error into the agent panel and ask what it means. Fix it before you go on. Vercel runs this same build, so an error here would also stop your site from going live.
+:::
 
 ## 2. Create a Vercel account
 
@@ -15,6 +19,8 @@ Do this now: read the last lines. They should list your pages with no red error 
 - Choose **Continue with GitHub** and allow access.
 
 ## 3. Import your repo
+
+This step connects Vercel to your GitHub [[repo]]. You do it once.
 
 - In Vercel, click **Add New**, then **Project**.
 - Find `my-dssa-site` in the list and click **Import**.
@@ -30,7 +36,7 @@ Ask the agent:
 
 > Add one line under my name that says what I study, which is ___. Change nothing else.
 
-Read the diff, then commit and push:
+Read the [[diff]], then [[commit]] and [[push]]:
 
 ```
 git add -A

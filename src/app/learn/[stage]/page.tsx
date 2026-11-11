@@ -7,6 +7,10 @@ import { reportProblemUrl } from '@/lib/learn/constants';
 import { LearnShell, LearnUnavailable } from '@/components/learn/LearnShell';
 import LockedNotice from '@/components/learn/LockedNotice';
 import LessonMarkdown from '@/components/learn/LessonMarkdown';
+import { WORD_CLASSES, hasOptionalDetails } from '@/components/learn/lessonHtml';
+import WordPopover from '@/components/learn/WordPopover';
+import DetailsToggle from '@/components/learn/DetailsToggle';
+import { wordsForStage } from '@/content/learn/glossary';
 import StackMap from '@/components/learn/StackMap';
 import ConceptCheck from '@/components/learn/ConceptCheck';
 import GithubUsernameForm from '@/components/learn/GithubUsernameForm';
@@ -59,16 +63,77 @@ export default async function StagePage({ params }: { params: { stage: string } 
   const username = state.githubUsername ?? '';
   const nextStage = getStage(stage.id + 1);
 
+  const hasCheck = stage.questions.length > 0;
+  const stageWords = wordsForStage(stage.id);
+
+  const lesson = (
+    <>
+      <StackMap highlight={stage.stackParts} />
+
+      <div className="mt-4 flex items-start justify-between gap-4 text-xs text-gray-500">
+        <p className="min-w-0">
+          Words with a dotted underline show a plain definition when you tap them. Sections marked Optional open when
+          you click them.
+        </p>
+        {hasOptionalDetails(stage.lesson) && <DetailsToggle targetId="lesson" />}
+      </div>
+
+      <div className="mt-6">
+        <LessonMarkdown
+          id="lesson"
+          content={stage.lesson}
+          replacements={{ githubUsername: username || 'your-username' }}
+          skipHref={!passed && hasCheck ? '#concept-check' : undefined}
+        />
+      </div>
+
+      {stageWords.length > 0 && (
+        <div className="mt-8 border-t border-gray-200 pt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Words from this stage</p>
+          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-800">
+            {stageWords.map((entry) => (
+              <li key={entry.word}>
+                <span
+                  data-word={entry.word}
+                  data-definition={entry.definition}
+                  role="button"
+                  tabIndex={0}
+                  className={WORD_CLASSES}
+                >
+                  {entry.word}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <LearnShell>
       {header}
+      <WordPopover />
 
-      <article className="bg-white p-6 sm:p-8 rounded-lg shadow-lg">
-        <StackMap highlight={stage.stackParts} />
-        <div className="mt-6">
-          <LessonMarkdown content={stage.lesson} replacements={{ githubUsername: username || 'your-username' }} />
-        </div>
-      </article>
+      {passed ? (
+        // Once the check is passed, the build card is the work. The lesson folds away but stays one click off.
+        <details className="group bg-white rounded-lg shadow-lg">
+          <summary className="flex cursor-pointer list-none items-center gap-3 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
+            <span aria-hidden="true" className="text-blue-primary transition-transform group-open:rotate-90">
+              &#9656;
+            </span>
+            <span>
+              <span className="block text-lg font-semibold text-blue-primary">Lesson: {stage.title}</span>
+              <span className="block text-sm text-gray-600">
+                {hasCheck ? 'You passed this check.' : 'You have read this.'} Open the lesson to read it again.
+              </span>
+            </span>
+          </summary>
+          <div className="border-t border-gray-200 px-6 pb-6 pt-4 sm:px-8 sm:pb-8">{lesson}</div>
+        </details>
+      ) : (
+        <article className="bg-white p-6 sm:p-8 rounded-lg shadow-lg">{lesson}</article>
+      )}
 
       {!passed && <ConceptCheck stageId={stage.id} questions={toClientQuestions(stage.questions)} />}
 
@@ -94,6 +159,9 @@ export default async function StagePage({ params }: { params: { stage: string } 
           )}
 
           <div className="mt-8 border-t border-gray-200 pt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link href="/learn/words" className="text-blue-primary hover:underline">
+              Words
+            </Link>
             <Link href="/learn/tips" className="text-blue-primary hover:underline">
               Beginner Tips
             </Link>

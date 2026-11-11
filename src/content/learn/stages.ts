@@ -34,7 +34,7 @@ export const STAGES: Stage[] = [
   {
     id: 0,
     title: 'You are already on the site',
-    idea: 'Your portfolio went online through six tools working together.',
+    idea: 'See what happened when you published your portfolio, and what you will make.',
     stackParts: ['cursor', 'github', 'nextjs', 'vercel', 'supabase', 'resend'],
     lastChecked: '2026-11-11',
     lesson: stage0Lesson,
@@ -44,7 +44,7 @@ export const STAGES: Stage[] = [
   {
     id: 1,
     title: 'Your toolkit',
-    idea: 'Cursor is an editor with an AI agent built in. The terminal runs typed commands.',
+    idea: 'Set up the app you will write code in, and ask its AI helper for a first change.',
     stackParts: ['cursor'],
     lastChecked: '2026-11-11',
     lesson: stage1Lesson,
@@ -53,8 +53,8 @@ export const STAGES: Stage[] = [
   },
   {
     id: 2,
-    title: 'Git and GitHub',
-    idea: 'A commit saves your files. A diff shows what changed. Secrets are never committed.',
+    title: 'Saving your work with Git and GitHub',
+    idea: 'Save versions of your project, keep a copy online, and keep passwords out of it.',
     stackParts: ['github'],
     lastChecked: '2026-11-11',
     lesson: stage2Lesson,
@@ -64,7 +64,7 @@ export const STAGES: Stage[] = [
   {
     id: 3,
     title: 'Going live',
-    idea: 'Your laptop has one copy and the web has the live copy. A push updates the live copy.',
+    idea: 'Put your site on the web, where anyone can open it.',
     stackParts: ['vercel'],
     lastChecked: '2026-11-11',
     lesson: stage3Lesson,
@@ -74,7 +74,7 @@ export const STAGES: Stage[] = [
   {
     id: 4,
     title: 'Pages and components',
-    idea: 'Each page.tsx file in app/ is a page. A component is a piece you reuse.',
+    idea: 'See how files become pages. Build a card about you and an events page.',
     stackParts: ['nextjs'],
     lastChecked: '2026-11-11',
     lesson: stage4Lesson,
@@ -83,8 +83,8 @@ export const STAGES: Stage[] = [
   },
   {
     id: 5,
-    title: 'Data',
-    idea: 'A table holds rows. An API route writes them. Keys stay in environment variables.',
+    title: 'Saving data',
+    idea: 'Add a sign-up form that saves what visitors type.',
     stackParts: ['supabase'],
     lastChecked: '2026-11-11',
     lesson: stage5Lesson,
@@ -104,7 +104,7 @@ export const STAGES: Stage[] = [
   {
     id: 7,
     title: 'Your first pull request',
-    idea: 'Fork, branch, pull request, automated checks. Your tip goes on the DSSA site.',
+    idea: 'Suggest a change to the DSSA site. Your tip for beginners goes live.',
     stackParts: ['github'],
     lastChecked: '2026-11-11',
     lesson: stage7Lesson,

@@ -23,6 +23,7 @@ Already checked (November 2026): `main` has no branch protection or rulesets, so
 | --- | --- |
 | Voice rules for all path text | `src/content/learn/VOICE.md` |
 | Stage list, titles, "last checked" dates | `src/content/learn/stages.ts` |
+| Word definitions | `src/content/learn/glossary.ts` |
 | Lesson and build card for a stage | `src/content/learn/stage-N/lesson.md` and `build.md` |
 | Concept check questions | `src/content/learn/stage-N/questions.ts` |
 | Tips | `src/data/tips/<github-username>.json` |
@@ -32,18 +33,34 @@ Already checked (November 2026): `main` has no branch protection or rulesets, so
 
 ## Edit a lesson
 
-1. Open the stage's `lesson.md` or `build.md`. They are plain markdown.
-2. Follow `VOICE.md`: short sentences, plain words, at most one metaphor and one em-dash per lesson, and a "Do this now" line that says how the learner knows it worked.
-3. If you walked through the build card yourself, update that stage's `lastChecked` date in `stages.ts`. The date shows at the bottom of each build card and in `/admin`.
-4. Open a pull request as usual. Lesson changes are reviewed by an officer. Only tip files merge on their own.
+1. Open the stage's `lesson.md` or `build.md`. They are markdown with three additions, described below.
+2. Follow `VOICE.md`. The main rule: most learners have never heard of the tools, so say what a thing does before you name it, and do not use a word before the stage that teaches it.
+3. Run `npm test`. `src/__tests__/learn-content.test.ts` fails if a lesson uses a tool name too early, marks a word that has no definition, or leaves a block open. The message names the stage and the word.
+4. If you walked through the build card yourself, update that stage's `lastChecked` date in `stages.ts`. The date shows at the bottom of each build card and in `/admin`.
+5. Open a pull request as usual. Lesson changes are reviewed by an officer. Only tip files merge on their own.
 
 `{{githubUsername}}` in a lesson or build card is replaced with the learner's saved GitHub username.
+
+### The three additions
+
+| You write | The learner sees |
+| --- | --- |
+| `:::short` ... `:::` | "The short version" box at the top of a lesson, with a link to the concept check for learners who know the topic. Every lesson with a concept check needs one. |
+| `:::more Title` ... `:::` | A closed section marked Optional. It opens when clicked. Use it for file names, code, background and troubleshooting. |
+| `[[word]]` | The word with a dotted underline. Tapping it shows the definition from `glossary.ts`. |
+
+Nothing a concept check asks about may be only inside a `:::more` block.
+
+### Add or change a word
+
+Definitions are in `src/content/learn/glossary.ts`. Each entry has the word, other forms such as plurals, a plain definition, and the stage that teaches it. That stage's lesson or build card must define the word in bold. Set `strict: true` for tool names and other words a newcomer cannot guess. The test then keeps the word out of earlier stages. The [Words page](https://bluehen-dssa.org/learn/words) lists every entry.
 
 ## Edit a concept check
 
 Each question in `questions.ts` has an `id`, a `concept`, a `prompt`, one `answer` and three `wrong` choices. Choices are shuffled for each learner.
 
-- The `concept` is what a learner sees when they miss the question. Name the lesson section to reread.
+- The `concept` is what a learner sees when they miss the question. Start it with the heading of the lesson section to reread. The test checks that the heading exists.
+- Ask only about the lesson's main text, never about something inside a `:::more` block.
 - A learner must answer every question correctly to pass. Keep each check to 3 to 5 questions.
 - Keep an `id` the same when you reword a question, so its miss count in `/admin` carries over. Use a new `id` for a new question.
 
@@ -96,7 +113,8 @@ Before:
 During:
 
 - [ ] Note where each newcomer stops and why. Write down the exact step.
-- [ ] Note any word a newcomer asks about. It may need a definition in the lesson.
+- [ ] Note any word a newcomer asks about. Add it to `glossary.ts`, or reword the lesson so the word is not needed.
+- [ ] Note which Optional sections newcomers open. One that everyone opens may belong in the main text.
 - [ ] Time Stage 1 and Stage 2. The target is under an hour each.
 
 After:

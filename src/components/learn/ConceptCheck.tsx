@@ -68,7 +68,7 @@ export default function ConceptCheck({
   }
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-lg shadow-lg">
+    <div id="concept-check" className="scroll-mt-24 bg-white p-6 sm:p-8 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-blue-primary mb-1">Concept check</h2>
       <p className="text-sm text-gray-600 mb-6">
         Answer every question correctly to unlock the build card. You can retake it as many times as you like.

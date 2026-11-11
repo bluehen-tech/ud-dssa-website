@@ -10,7 +10,7 @@ export const stage4Questions: Question[] = [
   },
   {
     id: 's4-component-props',
-    concept: 'Components and props',
+    concept: 'Components',
     prompt: 'Every card on the DSSA members page has the same layout but shows a different person. Why?',
     answer: 'Each card is the same component, given different props',
     wrong: [
@@ -21,7 +21,7 @@ export const stage4Questions: Question[] = [
   },
   {
     id: 's4-tailwind',
-    concept: 'Tailwind CSS',
+    concept: 'Styling with Tailwind CSS',
     prompt: 'What does the Tailwind class font-bold do?',
     answer: 'Makes text bold',
     wrong: ['Makes text larger', 'Changes the font to a new one', 'Makes text blue'],

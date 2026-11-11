@@ -25,8 +25,8 @@ export default async function LearnPage() {
       <div className="bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-4xl font-bold text-blue-primary mb-2">Builder Path</h1>
         <p className="text-xl text-gray-600">
-          A beginner route into the tools behind bluehen-dssa.org. Each stage has a short lesson, a concept check, and
-          a build card.
+          Learn how bluehen-dssa.org works by building a small site of your own. You do not need any coding
+          experience. Each stage has a short lesson, a concept check, and a build card.
         </p>
         <p className="mt-4 text-sm text-gray-500">
           Builder Path {cleared} of {COUNTED_STAGE_IDS.length}
@@ -107,6 +107,12 @@ export default async function LearnPage() {
 
           <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
             {state.passed.has(2) && <GithubUsernameForm current={state.githubUsername} />}
+            <p className="text-sm text-gray-700">
+              <Link href="/learn/words" className="font-medium text-blue-primary hover:underline">
+                Words
+              </Link>{' '}
+              explains every technical word the path uses, in plain words.
+            </p>
             <p className="text-sm text-gray-700">
               <Link href="/learn/tips" className="font-medium text-blue-primary hover:underline">
                 Beginner Tips

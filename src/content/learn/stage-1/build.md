@@ -1,8 +1,8 @@
 ## 1. Install Node.js
 
-Node.js runs the tools the starter site needs.
+**Node.js** is a free program that runs the tools your site project needs. You install it once and do not open it yourself.
 
-- Go to [nodejs.org](https://nodejs.org) and download the **LTS** version.
+- Go to [nodejs.org](https://nodejs.org) and download the **LTS** version. LTS is the stable one.
 - **Windows:** run the `.msi` installer. Keep the default options.
 - **Mac:** run the `.pkg` installer.
 
@@ -12,7 +12,10 @@ Node.js runs the tools the starter site needs.
 - **Windows:** run the installer.
 - **Mac:** open the download and drag Cursor into Applications.
 - Open Cursor. Sign in or create a free account.
-- If Cursor opens on a screen with only a chat box and no file list, look for the option to open the editor (it may be labeled IDE). The build cards use the editor.
+
+:::more If Cursor opens with only a chat box and no file list
+Look for the option to open the editor. It may be labeled IDE. The build cards use the editor.
+:::
 
 ## 3. Make a code folder
 
@@ -26,7 +29,9 @@ In Cursor, choose **Terminal > New Terminal**. The terminal opens at the bottom.
 
 Do this now: type `node --version` and press Enter. You should see a version number, such as `v22.11.0`.
 
-If you see "not recognized" or "command not found", close Cursor fully and open it again. The terminal was open before Node.js was installed.
+:::more If you see "not recognized" or "command not found"
+Close Cursor fully and open it again. The terminal was open before Node.js was installed, so it does not know about it yet.
+:::
 
 Do this now: type `pwd` and press Enter. The last part of the answer should be `code`.
 
