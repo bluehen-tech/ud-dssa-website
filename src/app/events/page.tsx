@@ -5,6 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Event } from '@/types/event';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
+import EventForm, {
+  EMPTY_EVENT_FORM,
+  generateSlug,
+  toDateTimeLocal,
+  type EventFormValues,
+  type FlyerChange,
+} from '@/components/EventForm';
 
 const DRIP_STAGES = {
   "save-the-date": {
@@ -50,13 +57,9 @@ function buildComposeUrl(event: Event, stage: DripStage): string {
   return `/email?${params.toString()}`;
 }
 
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+$/, '')
-    .replace(/^-+/, '');
+/** Storage path ("event-flyers/<file>.pdf") from a flyer's public URL. */
+function flyerPathFromUrl(flyerUrl: string): string {
+  return flyerUrl.split('/').slice(-2).join('/');
 }
 
 export default function EventsPage() {
@@ -64,18 +67,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    title: '',
-    slug: '',
-    description: '',
-    event_date: '',
-    event_url: '',
-  });
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedStages, setSelectedStages] = useState<Record<string, DripStage>>({});
 
   const supabase = createClient();
@@ -113,94 +105,115 @@ export default function EventsPage() {
     });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // Validate file type
-      if (file.type !== 'application/pdf') {
-        alert('Please upload a PDF file');
-        return;
-      }
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
-      setSelectedFile(file);
-    }
+  // Upload a flyer to Supabase storage and return its public URL
+  const uploadFlyer = async (file: File): Promise<string> => {
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
+    const filePath = `event-flyers/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('events')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('events')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const removeFlyer = async (flyerUrl: string) => {
+    await supabase.storage.from('events').remove([flyerPathFromUrl(flyerUrl)]);
+  };
+
+  const describeError = (error: any): string =>
+    error?.code === '23505'
+      ? 'That feedback URL slug is already used by another event. Choose a different slug.'
+      : error?.message || 'Unknown error';
+
+  const handleCreate = async (values: EventFormValues, flyer: FlyerChange): Promise<boolean> => {
     if (!session?.user?.id) {
       alert('You must be logged in to add events');
-      return;
+      return false;
     }
 
+    let flyerUrl: string | null = null;
     try {
-      setUploading(true);
-      let flyerUrl = null;
-
-      // Upload flyer to Supabase storage if file is selected
-      if (selectedFile) {
-        const fileExt = 'pdf';
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `event-flyers/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('events')
-          .upload(filePath, selectedFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('events')
-          .getPublicUrl(filePath);
-
-        flyerUrl = urlData.publicUrl;
+      if (flyer.file) {
+        flyerUrl = await uploadFlyer(flyer.file);
       }
 
-      // Insert event into database
       const { error: insertError } = await supabase
         .from('events')
         .insert({
-          title: formData.title,
-          slug: formData.slug || generateSlug(formData.title),
-          description: formData.description,
-          event_date: new Date(formData.event_date).toISOString(),
-          event_url: formData.event_url || null,
+          title: values.title,
+          slug: values.slug || generateSlug(values.title),
+          description: values.description,
+          event_date: new Date(values.event_date).toISOString(),
+          event_url: values.event_url || null,
           flyer_url: flyerUrl,
           created_by: session.user.id,
         } as any);
 
       if (insertError) throw insertError;
 
-      // Reset form
-      setFormData({
-        title: '',
-        slug: '',
-        description: '',
-        event_date: '',
-        event_url: '',
-      });
-      setSlugManuallyEdited(false);
-      setSelectedFile(null);
       setShowAddForm(false);
-      
-      // Refresh events list
       await fetchEvents();
-      
       alert('Event added successfully!');
+      return true;
     } catch (error: any) {
       console.error('Error adding event:', error);
-      alert(`Error adding event: ${error.message}`);
-    } finally {
-      setUploading(false);
+      if (flyerUrl) await removeFlyer(flyerUrl).catch(() => undefined);
+      alert(`Error adding event: ${describeError(error)}`);
+      return false;
+    }
+  };
+
+  // Edits are enforced server-side by the "Admins can update events" RLS policy.
+  const handleUpdate = async (event: Event, values: EventFormValues, flyer: FlyerChange): Promise<boolean> => {
+    let uploadedUrl: string | null = null;
+    try {
+      if (flyer.file) {
+        uploadedUrl = await uploadFlyer(flyer.file);
+      }
+      const nextFlyerUrl = uploadedUrl ?? (flyer.remove ? null : event.flyer_url ?? null);
+
+      const { data, error } = await (supabase.from('events') as any)
+        .update({
+          title: values.title,
+          slug: values.slug || generateSlug(values.title),
+          description: values.description,
+          event_date: new Date(values.event_date).toISOString(),
+          event_url: values.event_url || null,
+          flyer_url: nextFlyerUrl,
+        } as any)
+        .eq('id', event.id)
+        .select('id') as any;
+
+      if (error) throw error;
+      // RLS hides rows the user may not update, so "no rows" means not permitted.
+      if (!data || data.length === 0) {
+        throw new Error('You do not have permission to edit this event (admin access required), or it no longer exists.');
+      }
+
+      // Only delete the old flyer once the event points at its replacement.
+      if (event.flyer_url && nextFlyerUrl !== event.flyer_url) {
+        await removeFlyer(event.flyer_url).catch(() => undefined);
+      }
+
+      setEditingId(null);
+      await fetchEvents();
+      alert('Event updated successfully!');
+      return true;
+    } catch (error: any) {
+      console.error('Error updating event:', error);
+      if (uploadedUrl) await removeFlyer(uploadedUrl).catch(() => undefined);
+      alert(`Error updating event: ${describeError(error)}`);
+      return false;
     }
   };
 
@@ -212,10 +225,7 @@ export default function EventsPage() {
     try {
       // Delete flyer from storage if exists
       if (flyerUrl) {
-        const filePath = flyerUrl.split('/').slice(-2).join('/');
-        await supabase.storage
-          .from('events')
-          .remove([filePath]);
+        await removeFlyer(flyerUrl);
       }
 
       // Delete event from database
@@ -281,7 +291,10 @@ export default function EventsPage() {
           {canManageEvents && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <button
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={() => {
+                  setEditingId(null);
+                  setShowAddForm(!showAddForm);
+                }}
                 className="px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200"
               >
                 {showAddForm ? 'Cancel' : '+ Add New Event'}
@@ -293,139 +306,14 @@ export default function EventsPage() {
         {/* Admin: Add Event Form */}
         {canManageEvents && showAddForm && (
           <div className="bg-white p-8 rounded-lg shadow-lg mb-6">
-            <h2 className="text-2xl font-bold text-blue-primary mb-4">Add New Event</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Event Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => {
-                    const newTitle = e.target.value;
-                    setFormData({
-                      ...formData,
-                      title: newTitle,
-                      ...(slugManuallyEdited ? {} : { slug: generateSlug(newTitle) }),
-                    });
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent"
-                  placeholder="e.g., DSSA Fall Kickoff Event"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Feedback URL Slug
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 shrink-0">/feedback/</span>
-                  <input
-                    type="text"
-                    value={formData.slug}
-                    onChange={(e) => {
-                      setSlugManuallyEdited(true);
-                      setFormData({ ...formData, slug: generateSlug(e.target.value) });
-                    }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent font-mono text-sm"
-                    placeholder="auto-generated-from-title"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Auto-generated from title. Edit to customize the feedback URL.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
-                </label>
-                <textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent"
-                  placeholder="Describe the event..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Event Date & Time *
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={formData.event_date}
-                  onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Event URL (Optional)
-                </label>
-                <input
-                  type="url"
-                  value={formData.event_url}
-                  onChange={(e) => setFormData({ ...formData, event_url: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent"
-                  placeholder="https://example.com/event-registration"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Event Flyer (PDF, Optional)
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-primary focus:border-transparent"
-                />
-                {selectedFile && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
-                  </p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  PDF files only, max 5MB
-                </p>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-6 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploading ? 'Adding Event...' : 'Add Event'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setFormData({
-                      title: '',
-                      slug: '',
-                      description: '',
-                      event_date: '',
-                      event_url: '',
-                    });
-                    setSlugManuallyEdited(false);
-                    setSelectedFile(null);
-                  }}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+            <EventForm
+              heading="Add New Event"
+              submitLabel="Add Event"
+              busyLabel="Adding Event..."
+              initialValues={EMPTY_EVENT_FORM}
+              onSubmit={handleCreate}
+              onCancel={() => setShowAddForm(false)}
+            />
           </div>
         )}
 
@@ -441,6 +329,24 @@ export default function EventsPage() {
                 key={event.id}
                 className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-gray-200 hover:border-blue-primary"
               >
+                {canManageEvents && editingId === event.id ? (
+                  <EventForm
+                    heading="Edit Event"
+                    submitLabel="Save Changes"
+                    busyLabel="Saving..."
+                    initialValues={{
+                      title: event.title,
+                      slug: event.slug || '',
+                      description: event.description,
+                      event_date: toDateTimeLocal(event.event_date),
+                      event_url: event.event_url || '',
+                    }}
+                    existingFlyerUrl={event.flyer_url}
+                    originalSlug={event.slug || ''}
+                    onSubmit={(values, flyer) => handleUpdate(event, values, flyer)}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ) : (
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-blue-primary mb-2">
@@ -553,6 +459,15 @@ export default function EventsPage() {
                         </div>
                       )}
                       <button
+                        onClick={() => {
+                          setShowAddForm(false);
+                          setEditingId(event.id);
+                        }}
+                        className="px-4 py-2 bg-blue-50 text-blue-primary text-sm font-medium rounded-md hover:bg-blue-100 transition-colors duration-200"
+                      >
+                        Edit
+                      </button>
+                      <button
                         onClick={() => handleDelete(event.id, event.flyer_url)}
                         className="px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-md hover:bg-red-200 transition-colors duration-200"
                       >
@@ -561,6 +476,7 @@ export default function EventsPage() {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             ))}
           </div>
