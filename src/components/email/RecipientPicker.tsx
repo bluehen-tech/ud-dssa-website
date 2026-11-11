@@ -6,6 +6,7 @@ import { Contact, ContactUserType } from "@/types/contact";
 interface RecipientPickerProps {
   recipientsText: string;
   onChange: (value: string) => void;
+  heading?: string;
 }
 
 const USER_TYPE_LABELS: Record<ContactUserType, string> = {
@@ -18,6 +19,7 @@ const USER_TYPE_LABELS: Record<ContactUserType, string> = {
 export default function RecipientPicker({
   recipientsText,
   onChange,
+  heading = "4. Recipients",
 }: RecipientPickerProps) {
   const [showContacts, setShowContacts] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -185,7 +187,7 @@ export default function RecipientPicker({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-800">4. Recipients</h3>
+        <h3 className="text-sm font-semibold text-gray-800">{heading}</h3>
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
           {recipientCount} recipient{recipientCount !== 1 ? "s" : ""}
         </span>

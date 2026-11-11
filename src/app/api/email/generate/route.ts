@@ -4,12 +4,37 @@ import {
   generateEmail,
   type GenerateEmailRequest,
   type ContentMode,
+  type SequenceContext,
 } from "@/lib/uddssaMailer";
+import { DRIP_STAGES, type DripStage } from "@/lib/drip";
 
 // Maximum allowed input length (characters) to prevent abuse.
 const MAX_INPUT_LENGTH = 100_000;
 
 const VALID_MODES: ContentMode[] = ["manual", "ai_polish", "ai_draft"];
+
+/** Whitelist and bound the optional drip-sequence context sent by the client. */
+function parseSequence(raw: unknown): SequenceContext | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+  if (!DRIP_STAGES.includes(r.stage as DripStage)) return undefined;
+
+  const previousSteps = Array.isArray(r.previousSteps)
+    ? r.previousSteps.slice(0, 8).map((p) => {
+        const o = (p && typeof p === "object" ? p : {}) as Record<string, unknown>;
+        return { stage: str(o.stage, 32), subject: str(o.subject, 200), body: str(o.body, 1500) };
+      })
+    : [];
+
+  return {
+    goal: str(r.goal, 500),
+    stage: r.stage as string,
+    stageIndex: Number.isInteger(r.stageIndex) ? Math.max(0, r.stageIndex as number) : 0,
+    totalSteps: Number.isInteger(r.totalSteps) ? Math.max(1, r.totalSteps as number) : 1,
+    previousSteps,
+  };
+}
 
 /**
  * POST /api/email/generate
@@ -85,7 +110,10 @@ export async function POST(request: NextRequest) {
       body: typeof body.body === "string" ? body.body : undefined,
       draftInput:
         body.draftInput && typeof body.draftInput === "object"
-          ? (body.draftInput as GenerateEmailRequest["draftInput"])
+          ? ({
+              ...(body.draftInput as GenerateEmailRequest["draftInput"]),
+              sequence: parseSequence((body.draftInput as Record<string, unknown>).sequence),
+            } as GenerateEmailRequest["draftInput"])
           : undefined,
     };
 

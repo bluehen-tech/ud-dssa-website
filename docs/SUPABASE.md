@@ -190,6 +190,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 Get these from:
 - Supabase Dashboard → **Settings** → **API**
 
+Drip email campaigns need additional tables, functions and server-only variables
+(`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `UNSUBSCRIBE_TOKEN_SECRET`); see
+[DRIP_CAMPAIGNS_SETUP.md](DRIP_CAMPAIGNS_SETUP.md).
+
 ---
 
 ## Magic Link Authentication

@@ -43,6 +43,9 @@ This means:
 - list-specific unsubscribes block only that list
 - other lists can still be sent if not unsubscribed from them
 
+### Signed unsubscribe links
+When `UNSUBSCRIBE_TOKEN_SECRET` is set, every unsubscribe link carries an HMAC `token` bound to the exact email and list, and `/api/unsubscribe` rejects links whose token does not verify. Tokenless (legacy) links still work unless `UNSUBSCRIBE_REQUIRE_TOKEN=true`. See [DRIP_CAMPAIGNS_SETUP.md](DRIP_CAMPAIGNS_SETUP.md#6-unsubscribe-links).
+
 ## What this means for the product
 - Recipients can safely opt out using the unsubscribe button.
 - Unsubscribe preferences are enforced in the app, not just in email client UI.
