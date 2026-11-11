@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase-browser';
-import type { MemberPortfolio, MemberRole, PortfolioStatus } from '@/types/member';
+import { dbRowToMemberPortfolio, toPublicPortfolio } from '@/lib/memberPortfolioUtils';
+import PortfolioView from '@/components/members/PortfolioView';
+import type { MemberPortfolio, MemberPortfolioRow, MemberRole, PortfolioStatus } from '@/types/member';
 
 const PROFILE_PHOTO_BUCKET = 'member-portfolio-photos';
 const RESUME_BUCKET = 'member-resumes';
@@ -195,8 +197,41 @@ const initialFormState: FormState = {
   resume_size: '',
 };
 
-function buildPreviewPortfolio(formData: FormState, existingId: string | null, userEmail?: string): MemberPortfolio {
+function isBlank(values: string[]) {
+  return values.every((value) => !value.trim());
+}
+
+/** Returns a hint for an entry that is started but would be hidden on the public page. */
+function entryHint(required: Record<string, string>, all: string[]) {
+  if (isBlank(all)) return null;
+  const missing = Object.keys(required).filter((label) => !required[label].trim());
+  if (missing.length === 0) return null;
+  return `Add ${missing.join(' and ')} to show this on your public page.`;
+}
+
+function EntryHeading({ label, hint }: { label: string; hint: string | null }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-800">{label}</p>
+      {hint && <p className="text-xs text-amber-700 mt-0.5">{hint}</p>}
+    </div>
+  );
+}
+
+function parseGpa(input: string): number | string | undefined {
+  const value = input.trim();
+  if (!value) return undefined;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : value;
+}
+
+function buildPayload(formData: FormState) {
+  const skills = splitList(formData.skills);
+
+  // Partially filled entries are kept so nothing typed is lost; the public
+  // routes hide incomplete ones (see toPublicPortfolio).
   const experience = formData.experience
+    .filter((item) => !isBlank([item.title, item.organization, item.startDate, item.endDate, item.location, item.responsibilities, item.achievements]))
     .map((item) => ({
       title: item.title.trim(),
       organization: item.organization.trim(),
@@ -205,33 +240,33 @@ function buildPreviewPortfolio(formData: FormState, existingId: string | null, u
       location: item.location.trim() || undefined,
       responsibilities: splitLines(item.responsibilities),
       achievements: splitLines(item.achievements),
-    }))
-    .filter((item) => item.title && item.organization);
+    }));
 
   const education = formData.education
+    .filter((item) => !isBlank([item.degree, item.institution, item.startYear, item.endYear, item.fieldOfStudy, item.location, item.gpa, item.honors]))
     .map((item) => ({
       degree: item.degree.trim(),
       institution: item.institution.trim(),
-      startYear: item.startYear ? Number(item.startYear) : 0,
-      endYear: item.endYear ? Number(item.endYear) : 0,
+      startYear: item.startYear ? Number(item.startYear) : undefined,
+      endYear: item.endYear ? Number(item.endYear) : undefined,
       fieldOfStudy: item.fieldOfStudy.trim() || undefined,
       location: item.location.trim() || undefined,
-      gpa: item.gpa ? Number(item.gpa) : undefined,
+      gpa: parseGpa(item.gpa),
       honors: splitLines(item.honors),
-    }))
-    .filter((item) => item.degree && item.institution && item.startYear && item.endYear);
+    }));
 
   const projects = formData.projects
+    .filter((item) => !isBlank([item.title, item.description, item.technologies, item.githubUrl, item.liveUrl]))
     .map((item) => ({
       title: item.title.trim(),
       description: item.description.trim(),
-      technologies: splitLines(item.technologies),
+      technologies: splitList(item.technologies),
       githubUrl: item.githubUrl.trim() || undefined,
       liveUrl: item.liveUrl.trim() || undefined,
-    }))
-    .filter((item) => item.title && item.description);
+    }));
 
   const achievements = formData.achievements
+    .filter((item) => !isBlank([item.title, item.organization, item.date, item.description, item.link]))
     .map((item) => ({
       title: item.title.trim(),
       type: item.type,
@@ -239,130 +274,81 @@ function buildPreviewPortfolio(formData: FormState, existingId: string | null, u
       date: item.date.trim() || undefined,
       description: item.description.trim() || undefined,
       link: item.link.trim() || undefined,
-    }))
-    .filter((item) => item.title);
+    }));
 
   return {
-    id: existingId || 'preview',
-    role: formData.role,
-    position: formData.position.trim() || undefined,
     name: formData.name.trim() || 'Untitled',
-    email: userEmail || '',
-    bio: formData.bio.trim(),
-    tagline: formData.tagline.trim() || undefined,
-    major: formData.major.trim() || undefined,
-    graduationDate: formData.graduation_date.trim() || undefined,
-    profileImageUrl: formData.profile_image_url.trim() || undefined,
-    resumeUrl: formData.resume_path ? getResumePublicUrlFromPath(formData.resume_path) : undefined,
-    resumeFileName: formData.resume_filename || undefined,
-    resumeUploadedAt: formData.resume_updated_at || undefined,
-    skills: splitLines(formData.skills).length ? [{ items: splitLines(formData.skills) }] : [],
-    experience,
-    education,
-    projects,
-    leadershipActivities: splitLines(formData.leadership_activities),
-    coursework: splitLines(formData.coursework),
-    toolsStack: {
-      languages: splitLines(formData.tools_languages),
-      mlData: splitLines(formData.tools_ml_data),
-      biAnalytics: splitLines(formData.tools_bi_analytics),
-      cloudDevOps: splitLines(formData.tools_cloud_devops),
-    },
-    careerInterests: {
-      roles: splitLines(formData.career_roles),
-      domains: splitLines(formData.career_domains),
-      locations: splitLines(formData.career_locations),
-      employmentTypes: splitLines(formData.career_employment_types),
-    },
-    availability: {
-      startTerm: formData.availability_start_term.trim() || undefined,
-      internshipSeason: formData.availability_internship_season.trim() || undefined,
-      timezone: formData.availability_timezone.trim() || undefined,
-    },
-    portfolioHighlights: splitLines(formData.portfolio_highlights),
-    contactPreferences: {
-      preferredMethod: formData.contact_preferred_method.trim() || undefined,
-      allowPublicEmail: formData.contact_allow_public_email,
-      allowPublicResume: formData.contact_allow_public_resume,
-    },
+    role: formData.role,
+    position: formData.position.trim() || null,
+    tagline: formData.tagline.trim() || null,
+    major: formData.major.trim() || null,
+    graduation_date: formData.graduation_date.trim() || null,
+    bio: formData.bio.trim() || null,
+    profile_image_url: formData.profile_image_url.trim() || null,
     links: {
       linkedin: formData.linkedin.trim() || undefined,
       github: formData.github.trim() || undefined,
       website: formData.website.trim() || undefined,
-      email: formData.contact_allow_public_email ? userEmail || undefined : undefined,
     },
+    skills: skills.length ? [{ items: skills }] : [],
+    education,
+    experience,
+    projects,
     achievements,
-    interests: [],
+    tech_stack: {
+      languages: splitList(formData.tools_languages),
+      mlData: splitList(formData.tools_ml_data),
+      biAnalytics: splitList(formData.tools_bi_analytics),
+      cloudDevOps: splitList(formData.tools_cloud_devops),
+    },
+    career_interests: {
+      roles: splitLines(formData.career_roles),
+      domains: splitLines(formData.career_domains),
+      locations: splitLines(formData.career_locations),
+      employmentTypes: splitLines(formData.career_employment_types),
+      leadershipActivities: splitLines(formData.leadership_activities),
+      coursework: splitLines(formData.coursework),
+      availability: {
+        startTerm: formData.availability_start_term.trim() || undefined,
+        internshipSeason: formData.availability_internship_season.trim() || undefined,
+        timezone: formData.availability_timezone.trim() || undefined,
+      },
+    },
+    portfolio_highlights: splitLines(formData.portfolio_highlights),
+    contact_prefs: {
+      preferredMethod: formData.contact_preferred_method.trim() || undefined,
+      allowPublicEmail: formData.contact_allow_public_email,
+    },
+    resume_public: formData.contact_allow_public_resume,
+    resume_path: formData.resume_path || null,
+    resume_filename: formData.resume_filename || null,
+    resume_updated_at: formData.resume_updated_at || null,
+    resume_mime: formData.resume_mime || null,
+    resume_size: formData.resume_size ? Number(formData.resume_size) : null,
   };
 }
 
-function PreviewCard({ portfolio }: { portfolio: MemberPortfolio }) {
-  return (
-    <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
-      <div className="flex flex-col items-center text-center mb-6">
-        {portfolio.profileImageUrl ? (
-          <img src={portfolio.profileImageUrl} alt={portfolio.name} className="w-28 h-28 rounded-full object-cover mb-4" />
-        ) : (
-          <div className="w-28 h-28 rounded-full bg-blue-100 text-blue-primary font-bold text-4xl flex items-center justify-center mb-4">
-            {portfolio.name?.charAt(0)?.toUpperCase() || 'M'}
-          </div>
-        )}
-        <h2 className="text-3xl font-bold text-blue-primary">{portfolio.name}</h2>
-        {portfolio.position && <p className="text-lg text-gray-700 mt-1">{portfolio.position}</p>}
-        {portfolio.tagline && <p className="text-gray-600 mt-2">{portfolio.tagline}</p>}
-      </div>
-
-      {portfolio.bio && (
-        <section className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">About</h3>
-          <p className="text-gray-700 whitespace-pre-wrap">{portfolio.bio}</p>
-        </section>
-      )}
-
-      {portfolio.skills && portfolio.skills.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Skills</h3>
-          <div className="flex flex-wrap gap-2">
-            {portfolio.skills.flatMap((group, i) =>
-              (group.items || []).map((skill, j) => (
-                <span key={`${i}-${j}`} className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
-                  {skill}
-                </span>
-              ))
-            )}
-          </div>
-        </section>
-      )}
-
-      {portfolio.projects && portfolio.projects.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Projects</h3>
-          <div className="space-y-3">
-            {portfolio.projects.map((project, index) => (
-              <div key={`${project.title}-${index}`} className="border border-gray-200 rounded-lg p-4">
-                <p className="font-semibold text-gray-900">{project.title}</p>
-                <p className="text-sm text-gray-700 mt-1">{project.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {portfolio.links && (portfolio.links.linkedin || portfolio.links.github || portfolio.links.website) && (
-        <section className="pt-6 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect</h3>
-          <div className="flex flex-wrap gap-4">
-            {portfolio.links.linkedin && <span className="text-blue-600">LinkedIn</span>}
-            {portfolio.links.github && <span className="text-gray-800">GitHub</span>}
-            {portfolio.links.website && <span className="text-blue-600">Website</span>}
-          </div>
-        </section>
-      )}
-    </div>
-  );
+function buildPreviewPortfolio(formData: FormState, existingId: string | null, userEmail?: string): MemberPortfolio {
+  const row = {
+    ...buildPayload(formData),
+    id: existingId || 'preview',
+    user_id: '',
+    email: userEmail ?? null,
+    interests: [],
+  } as unknown as MemberPortfolioRow;
+  return toPublicPortfolio(dbRowToMemberPortfolio(row));
 }
 
+/** For boxes labelled "one per line": commas are part of the text. */
 function splitLines(input: string) {
+  return input
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+/** For tag-style boxes (skills, tools, technologies): commas or new lines. */
+function splitList(input: string) {
   return input
     .split(/\n|,/)
     .map((item) => item.trim())
@@ -448,6 +434,7 @@ export default function MyPortfolioPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingAutoSaveBodyRef = useRef<string | null>(null);
   const hasHydratedFormRef = useRef(false);
   const lastPersistedSnapshotRef = useRef<string | null>(null);
   const userId = session?.user?.id;
@@ -464,14 +451,16 @@ export default function MyPortfolioPage() {
     [formData, portfolio?.id, session?.user?.email]
   );
 
+  // Keyed on userId, not session: the session object is replaced on every tab refocus and
+  // token refresh, and reloading here would overwrite what the member is typing.
   useEffect(() => {
     if (authLoading) return;
-    if (!session) {
+    if (!userId) {
       router.replace('/login?redirect=/members/me');
       return;
     }
     fetchMyPortfolio();
-  }, [session, authLoading, router]);
+  }, [userId, authLoading, router]);
 
   useEffect(() => {
     if (!userId || !canEdit) return;
@@ -479,6 +468,7 @@ export default function MyPortfolioPage() {
   }, [formData, userId, canEdit]);
 
   useEffect(() => {
+    pendingAutoSaveBodyRef.current = null;
     if (!portfolio || !userId || !canEdit || loading || saving || uploadingPhoto || uploadingResume) {
       return;
     }
@@ -496,13 +486,17 @@ export default function MyPortfolioPage() {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
+    const body = JSON.stringify(buildPayload(formData));
+    pendingAutoSaveBodyRef.current = body;
+
     autoSaveTimeoutRef.current = setTimeout(async () => {
+      pendingAutoSaveBodyRef.current = null;
       setAutoSaveState('saving');
       try {
         const res = await fetch('/api/member-portfolios/me', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildPayload()),
+          body,
         });
         const data = await res.json();
         if (!res.ok) {
@@ -511,6 +505,7 @@ export default function MyPortfolioPage() {
 
         lastPersistedSnapshotRef.current = currentSnapshot;
         setAutoSaveState('saved');
+        setError(null);
       } catch (e) {
         setAutoSaveState('error');
         setError(e instanceof Error ? e.message : 'Failed to auto-save portfolio');
@@ -524,6 +519,39 @@ export default function MyPortfolioPage() {
       }
     };
   }, [formData, portfolio, userId, canEdit, loading, saving, uploadingPhoto, uploadingResume]);
+
+  useEffect(() => {
+    const flushPendingAutoSave = () => {
+      const body = pendingAutoSaveBodyRef.current;
+      if (!body) return;
+      pendingAutoSaveBodyRef.current = null;
+      // keepalive lets the request finish after the page is gone.
+      fetch('/api/member-portfolios/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    };
+
+    window.addEventListener('pagehide', flushPendingAutoSave);
+    return () => {
+      window.removeEventListener('pagehide', flushPendingAutoSave);
+      flushPendingAutoSave();
+    };
+  }, []);
+
+  /** Refresh status and saved fields without touching the form the member is editing. */
+  const refreshPortfolioMeta = async () => {
+    try {
+      const res = await fetch('/api/member-portfolios/me');
+      const data: PortfolioResponse = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to load');
+      setPortfolio(data.portfolio);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load portfolio');
+    }
+  };
 
   const fetchMyPortfolio = async () => {
     setLoading(true);
@@ -661,7 +689,7 @@ export default function MyPortfolioPage() {
   };
 
   const completionChecks = useMemo(() => {
-    const skillsCount = splitLines(formData.skills).length;
+    const skillsCount = splitList(formData.skills).length;
     const hasExperience = formData.experience.some(
       (item) => item.title.trim() && item.organization.trim()
     );
@@ -684,7 +712,7 @@ export default function MyPortfolioPage() {
   const publishReadinessError = useMemo(() => {
     if (!formData.name.trim()) return 'Name is required.';
     if (!formData.bio.trim()) return 'Bio is required.';
-    if (splitLines(formData.skills).length === 0) return 'Add at least one skill.';
+    if (splitList(formData.skills).length === 0) return 'Add at least one skill.';
     const hasExperience = formData.experience.some(
       (item) => item.title.trim() && item.organization.trim()
     );
@@ -832,7 +860,7 @@ export default function MyPortfolioPage() {
               github: formData.github.trim() || undefined,
               website: formData.website.trim() || undefined,
             },
-            skills: splitLines(formData.skills).length ? [{ items: splitLines(formData.skills) }] : [],
+            skills: splitList(formData.skills).length ? [{ items: splitList(formData.skills) }] : [],
           }),
         });
 
@@ -863,7 +891,7 @@ export default function MyPortfolioPage() {
       }));
 
       if (!portfolio) {
-        await fetchMyPortfolio();
+        await refreshPortfolioMeta();
       }
 
       if (resumeInputRef.current) resumeInputRef.current.value = '';
@@ -904,117 +932,6 @@ export default function MyPortfolioPage() {
     return copy;
   };
 
-  const buildPayload = () => {
-    const skills = splitLines(formData.skills);
-
-    const experience = formData.experience
-      .map((item) => ({
-        title: item.title.trim(),
-        organization: item.organization.trim(),
-        startDate: item.startDate.trim(),
-        endDate: item.endDate.trim() || undefined,
-        location: item.location.trim() || undefined,
-        responsibilities: splitLines(item.responsibilities),
-        achievements: splitLines(item.achievements),
-      }))
-      .filter((item) => item.title && item.organization);
-
-    const education = formData.education
-      .map((item) => ({
-        degree: item.degree.trim(),
-        institution: item.institution.trim(),
-        startYear: item.startYear ? Number(item.startYear) : undefined,
-        endYear: item.endYear ? Number(item.endYear) : undefined,
-        fieldOfStudy: item.fieldOfStudy.trim() || undefined,
-        location: item.location.trim() || undefined,
-        gpa: item.gpa ? Number(item.gpa) : undefined,
-        honors: splitLines(item.honors),
-      }))
-      .filter((item) => item.degree && item.institution);
-
-    const projects = formData.projects
-      .map((item) => ({
-        title: item.title.trim(),
-        description: item.description.trim(),
-        technologies: splitLines(item.technologies),
-        githubUrl: item.githubUrl.trim() || undefined,
-        liveUrl: item.liveUrl.trim() || undefined,
-      }))
-      .filter((item) => item.title && item.description);
-
-    const achievements = formData.achievements
-      .map((item) => ({
-        title: item.title.trim(),
-        type: item.type,
-        organization: item.organization.trim() || undefined,
-        date: item.date.trim() || undefined,
-        description: item.description.trim() || undefined,
-        link: item.link.trim() || undefined,
-      }))
-      .filter((item) => item.title);
-
-    const leadershipActivities = splitLines(formData.leadership_activities);
-    const coursework = splitLines(formData.coursework);
-    const portfolioHighlights = splitLines(formData.portfolio_highlights);
-
-    const toolsStack = {
-      languages: splitLines(formData.tools_languages),
-      mlData: splitLines(formData.tools_ml_data),
-      biAnalytics: splitLines(formData.tools_bi_analytics),
-      cloudDevOps: splitLines(formData.tools_cloud_devops),
-    };
-
-    const careerInterests = {
-      roles: splitLines(formData.career_roles),
-      domains: splitLines(formData.career_domains),
-      locations: splitLines(formData.career_locations),
-      employmentTypes: splitLines(formData.career_employment_types),
-    };
-
-    return {
-      name: formData.name.trim() || 'Untitled',
-      role: formData.role,
-      position: formData.position.trim() || null,
-      tagline: formData.tagline.trim() || null,
-      major: formData.major.trim() || null,
-      graduation_date: formData.graduation_date.trim() || null,
-      bio: formData.bio.trim() || null,
-      profile_image_url: formData.profile_image_url.trim() || null,
-      links: {
-        linkedin: formData.linkedin.trim() || undefined,
-        github: formData.github.trim() || undefined,
-        website: formData.website.trim() || undefined,
-      },
-      skills: skills.length ? [{ items: skills }] : [],
-      education,
-      experience,
-      projects,
-      achievements,
-      tech_stack: toolsStack,
-      career_interests: {
-        ...careerInterests,
-        leadershipActivities,
-        coursework,
-        availability: {
-          startTerm: formData.availability_start_term.trim() || undefined,
-          internshipSeason: formData.availability_internship_season.trim() || undefined,
-          timezone: formData.availability_timezone.trim() || undefined,
-        },
-      },
-      portfolio_highlights: portfolioHighlights,
-      contact_prefs: {
-        preferredMethod: formData.contact_preferred_method.trim() || undefined,
-        allowPublicEmail: formData.contact_allow_public_email,
-      },
-      resume_public: formData.contact_allow_public_resume,
-      resume_path: formData.resume_path || null,
-      resume_filename: formData.resume_filename || null,
-      resume_updated_at: formData.resume_updated_at || null,
-      resume_mime: formData.resume_mime || null,
-      resume_size: formData.resume_size ? Number(formData.resume_size) : null,
-    };
-  };
-
   const savePortfolio = async (isCreate: boolean) => {
     const validation = validateForm();
     if (!validation.isValid) {
@@ -1032,7 +949,7 @@ export default function MyPortfolioPage() {
       const res = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(buildPayload(formData)),
       });
 
       const data = await res.json();
@@ -1042,7 +959,7 @@ export default function MyPortfolioPage() {
       lastPersistedSnapshotRef.current = serializeFormState(formData);
       setAutoSaveState('saved');
 
-      await fetchMyPortfolio();
+      await refreshPortfolioMeta();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save portfolio');
     } finally {
@@ -1069,7 +986,7 @@ export default function MyPortfolioPage() {
       const saveRes = await fetch('/api/member-portfolios/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(buildPayload(formData)),
       });
       const saveData = await saveRes.json();
       if (!saveRes.ok) throw new Error(saveData.message || 'Failed to save before publishing');
@@ -1084,7 +1001,7 @@ export default function MyPortfolioPage() {
       lastPersistedSnapshotRef.current = serializeFormState(formData);
       setAutoSaveState('saved');
 
-      await fetchMyPortfolio();
+      await refreshPortfolioMeta();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to publish portfolio');
     } finally {
@@ -1112,7 +1029,7 @@ export default function MyPortfolioPage() {
               <p className="text-sm text-gray-500 mt-1">
                 {autoSaveState === 'saving' && 'Saving changes...'}
                 {autoSaveState === 'saved' && 'Changes auto-saved'}
-                {autoSaveState === 'error' && 'Auto-save failed. Your local draft is still kept in this browser.'}
+                {autoSaveState === 'error' && 'Auto-save failed. Your latest edits are not saved yet - click Save changes to try again.'}
                 {autoSaveState === 'idle' && 'Saved changes will appear here automatically when you update your portfolio.'}
               </p>
             )}
@@ -1140,8 +1057,8 @@ export default function MyPortfolioPage() {
             <p className="font-medium text-green-900">Published</p>
             <p className="text-sm text-green-800 mt-1">
               Your portfolio is live and editable. Updates are visible immediately on{' '}
-              <Link href="/members" className="underline">
-                Members
+              <Link href={`/members/${portfolio.id}`} className="underline">
+                your public page
               </Link>
               .
             </p>
@@ -1228,7 +1145,10 @@ export default function MyPortfolioPage() {
               <p className="text-sm text-gray-600">
                 Live preview of how your public page will look after publishing.
               </p>
-              <PreviewCard portfolio={previewPortfolio} />
+              <PortfolioView
+                portfolio={previewPortfolio}
+                resumeHref={formData.resume_path ? portfolio?.display?.resumeUrl || getResumePublicUrlFromPath(formData.resume_path) : undefined}
+              />
             </div>
           )}
 
@@ -1460,7 +1380,13 @@ export default function MyPortfolioPage() {
             {formData.education.map((edu, index) => (
               <div key={`edu-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-800">Education #{index + 1}</p>
+                  <EntryHeading
+                    label={`Education #${index + 1}`}
+                    hint={entryHint(
+                      { 'a degree': edu.degree, 'an institution': edu.institution },
+                      [edu.degree, edu.institution, edu.startYear, edu.endYear, edu.fieldOfStudy, edu.location, edu.gpa, edu.honors]
+                    )}
+                  />
                   {canEdit && (
                     <div className="flex gap-2">
                       <button
@@ -1644,7 +1570,13 @@ export default function MyPortfolioPage() {
             {formData.experience.map((exp, index) => (
               <div key={`exp-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-800">Experience #{index + 1}</p>
+                  <EntryHeading
+                    label={`Experience #${index + 1}`}
+                    hint={entryHint(
+                      { 'a title': exp.title, 'an organization': exp.organization },
+                      [exp.title, exp.organization, exp.startDate, exp.endDate, exp.location, exp.responsibilities, exp.achievements]
+                    )}
+                  />
                   {canEdit && (
                     <div className="flex gap-2">
                       <button
@@ -1812,7 +1744,13 @@ export default function MyPortfolioPage() {
             {formData.projects.map((project, index) => (
               <div key={`project-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-800">Project #{index + 1}</p>
+                  <EntryHeading
+                    label={`Project #${index + 1}`}
+                    hint={entryHint(
+                      { 'a title': project.title, 'a description': project.description },
+                      [project.title, project.description, project.technologies, project.githubUrl, project.liveUrl]
+                    )}
+                  />
                   {canEdit && (
                     <div className="flex gap-2">
                       <button
@@ -1960,7 +1898,13 @@ export default function MyPortfolioPage() {
             {formData.achievements.map((achievement, index) => (
               <div key={`achievement-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-800">Entry #{index + 1}</p>
+                  <EntryHeading
+                    label={`Entry #${index + 1}`}
+                    hint={entryHint(
+                      { 'a title': achievement.title },
+                      [achievement.title, achievement.organization, achievement.date, achievement.description, achievement.link]
+                    )}
+                  />
                   {canEdit && (
                     <div className="flex gap-2">
                       <button
@@ -2178,7 +2122,7 @@ export default function MyPortfolioPage() {
                 rows={2}
                 value={formData.career_domains}
                 disabled={!canEdit}
-                placeholder="Domains/industries"
+                placeholder="Domains/industries (one per line)"
                 onChange={(e) => setFormData((prev) => ({ ...prev, career_domains: e.target.value }))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 disabled:bg-gray-50"
               />
@@ -2186,7 +2130,7 @@ export default function MyPortfolioPage() {
                 rows={2}
                 value={formData.career_locations}
                 disabled={!canEdit}
-                placeholder="Preferred locations"
+                placeholder="Preferred locations (one per line)"
                 onChange={(e) => setFormData((prev) => ({ ...prev, career_locations: e.target.value }))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 disabled:bg-gray-50"
               />
@@ -2194,7 +2138,7 @@ export default function MyPortfolioPage() {
                 rows={2}
                 value={formData.career_employment_types}
                 disabled={!canEdit}
-                placeholder="Employment types (Internship, Full-time, etc.)"
+                placeholder="Employment types, one per line (Internship, Full-time, etc.)"
                 onChange={(e) => setFormData((prev) => ({ ...prev, career_employment_types: e.target.value }))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 disabled:bg-gray-50"
               />
@@ -2276,6 +2220,12 @@ export default function MyPortfolioPage() {
           </section>
 
           </>
+          )}
+
+          {canEdit && error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
           )}
 
           {canEdit && (

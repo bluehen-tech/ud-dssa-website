@@ -50,9 +50,41 @@ export function dbRowToMemberPortfolio(row: MemberPortfolioRow): MemberPortfolio
       ...(contactPrefs ?? {}),
       allowPublicResume: row.resume_public ?? contactPrefs?.allowPublicResume ?? true,
     },
-    links: (row.links as MemberPortfolio['links']) ?? undefined,
+    links: {
+      ...((row.links as MemberPortfolio['links']) ?? {}),
+      email: contactPrefs?.allowPublicEmail === true ? row.email ?? undefined : undefined,
+    },
     achievements: row.achievements ?? undefined,
     interests: row.interests,
+  };
+}
+
+const hasText = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+
+export const isCompleteExperience = (item: { title?: string; organization?: string }) =>
+  hasText(item.title) && hasText(item.organization);
+
+export const isCompleteEducation = (item: { degree?: string; institution?: string }) =>
+  hasText(item.degree) && hasText(item.institution);
+
+export const isCompleteProject = (item: { title?: string; description?: string }) =>
+  hasText(item.title) && hasText(item.description);
+
+export const isCompleteAchievement = (item: { title?: string }) => hasText(item.title);
+
+/**
+ * Prepare a portfolio for public display: owners may save half-filled entries,
+ * which must not appear publicly, and the email is withheld unless opted in.
+ */
+export function toPublicPortfolio(portfolio: MemberPortfolio): MemberPortfolio {
+  const allowEmail = portfolio.contactPreferences?.allowPublicEmail === true;
+  return {
+    ...portfolio,
+    email: allowEmail ? portfolio.email : '',
+    experience: portfolio.experience?.filter(isCompleteExperience),
+    education: portfolio.education?.filter(isCompleteEducation),
+    projects: portfolio.projects?.filter(isCompleteProject),
+    achievements: portfolio.achievements?.filter(isCompleteAchievement),
   };
 }
 

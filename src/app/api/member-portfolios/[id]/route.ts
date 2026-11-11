@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
-import { dbRowToMemberPortfolio } from '@/lib/memberPortfolioUtils';
+import { dbRowToMemberPortfolio, toPublicPortfolio } from '@/lib/memberPortfolioUtils';
 import { getBuilderBadges } from '@/lib/learn/badges';
 import type { MemberPortfolioRow, MemberRole } from '@/types/member';
 
@@ -56,10 +56,14 @@ export async function GET(
 
     const memberRow = row as MemberPortfolioRow;
     const badges = await getBuilderBadges([memberRow.user_id]);
-    const portfolio = { ...dbRowToMemberPortfolio(memberRow), builder: badges.get(memberRow.user_id) };
+    const portfolio = {
+      ...toPublicPortfolio(dbRowToMemberPortfolio(memberRow)),
+      builder: badges.get(memberRow.user_id),
+    };
     return NextResponse.json({
       success: true,
       portfolio,
+      isOwner: Boolean(user?.id && user.id === memberRow.user_id),
       status: memberRow.status,
       submitted_at: memberRow.submitted_at,
       rejection_reason: memberRow.rejection_reason,

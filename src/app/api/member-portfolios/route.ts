@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
-import { dbRowToMemberPortfolio } from '@/lib/memberPortfolioUtils';
+import { dbRowToMemberPortfolio, toPublicPortfolio } from '@/lib/memberPortfolioUtils';
 import { getBuilderBadges } from '@/lib/learn/badges';
 import type { MemberPortfolio, MemberPortfolioRow, MemberRole } from '@/types/member';
 
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     const memberRows = (rows ?? []) as MemberPortfolioRow[];
     const badges = await getBuilderBadges(memberRows.map((row) => row.user_id));
     const portfolios = sortPortfolios(
-      memberRows.map((row) => ({ ...dbRowToMemberPortfolio(row), builder: badges.get(row.user_id) }))
+      memberRows.map((row) => ({ ...toPublicPortfolio(dbRowToMemberPortfolio(row)), builder: badges.get(row.user_id) }))
     );
     return NextResponse.json({ success: true, portfolios });
   } catch (err) {

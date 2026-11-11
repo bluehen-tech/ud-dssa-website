@@ -71,7 +71,7 @@ export interface Education {
   location?: string;
   current?: boolean;
   fieldOfStudy?: string; // e.g., "Applied Mathematics & Astrophysics"
-  gpa?: number; // e.g., 4.0
+  gpa?: number | string; // e.g., 4.0 or "3.8/4.0"
   honors?: string[]; // e.g., ["Summa Cum Laude", "Outstanding Dissertation Award"]
   relevantCoursework?: string[]; // Array of course names
 }

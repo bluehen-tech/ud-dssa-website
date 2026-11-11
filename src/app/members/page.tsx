@@ -65,7 +65,7 @@ export default function MembersPage() {
                 href="/members/me"
                 className="inline-flex items-center px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors"
               >
-                My portfolio
+                Edit my portfolio
               </Link>
             )}
           </div>
