@@ -313,11 +313,16 @@ Provides centralized authentication state:
 
 ### Protected Routes
 
-**File:** `middleware.ts`
+**File:** `src/middleware.ts` (calls `updateSession` in `src/lib/supabase-middleware.ts`)
 
-Protects routes that require authentication:
-- `/officers` - Requires authentication
-- `/opportunities` - Public (shows sign-in prompt if not logged in)
+Next.js only loads middleware from `src/middleware.ts` in this repo, because the app lives under `src/`. A `middleware.ts` at the repo root is ignored.
+
+On every request (except static files and images), `updateSession` calls `supabase.auth.getUser()`, which validates the token with Supabase Auth and refreshes the session cookies.
+
+`PROTECTED_PATHS` lists the pages that require a signed-in `@udel.edu` user. Each entry covers the path and everything below it, matched by whole path segments, so `/email` covers `/email/sent` but not `/emails/...`:
+- `/officers`, `/email`, `/contacts`, `/admin`, `/members/me`, `/learn`
+
+A signed-out visitor goes to `/login?redirect=<path>`. A non-`@udel.edu` user is signed out and sent to `/login` with an error. Pages such as `/opportunities` stay public and show a sign-in prompt instead. API routes check auth themselves.
 
 ### Email Domain Validation
 

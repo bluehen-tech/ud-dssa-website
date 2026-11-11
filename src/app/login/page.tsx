@@ -92,7 +92,12 @@ function LoginForm() {
   const [otpSent, setOtpSent] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const redirectParam = searchParams.get('redirect');
+  const rawRedirect = searchParams.get('redirect');
+  // Same-site paths only, so a crafted link cannot send a signed-in user elsewhere.
+  const redirectParam =
+    rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\')
+      ? rawRedirect
+      : null;
   const nextUrl = redirectParam || DEFAULT_REDIRECT;
 
   // Auto-redirect if user is logged in

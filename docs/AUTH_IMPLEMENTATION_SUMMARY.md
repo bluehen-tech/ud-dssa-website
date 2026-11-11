@@ -58,8 +58,8 @@
    - Configured for implicit flow (magic links)
    - Auto-refresh tokens enabled
 
-5. **`middleware.ts`**
-   - Protects `/officers` route
+5. **`src/middleware.ts`**
+   - Refreshes the session on each request and protects the pages in `PROTECTED_PATHS` (see `docs/SUPABASE.md`)
    - Allows public access to `/opportunities`
 
 ---

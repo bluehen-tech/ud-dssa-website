@@ -3,61 +3,80 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isSupabaseConfigured } from './supabase-config';
 
-/**
- * Creates a mock Supabase client for use when Supabase is not configured
- * This allows the app to run in demo/preview mode without Supabase credentials
- */
-function createMockSupabaseClient() {
-  return {
-    auth: {
-      getSession: async () => ({
-        data: { session: null },
-        error: null,
-      }),
-      refreshSession: async () => ({
-        data: { session: null },
-        error: null,
-      }),
-      signOut: async () => ({
-        error: null,
-      }),
-    },
-  } as any;
+/** Pages that require a signed-in @udel.edu user. Each entry covers the path and everything below it. */
+export const PROTECTED_PATHS = ['/officers', '/email', '/contacts', '/admin', '/members/me', '/learn'];
+
+const ALLOWED_EMAIL_DOMAIN = '@udel.edu';
+
+export function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
-export const createClient = (request: NextRequest) => {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+/**
+ * Refreshes the Supabase session cookies on every request and guards protected pages.
+ * Follows the @supabase/ssr Next.js pattern: the response that carries the refreshed
+ * cookies must be the one returned, and redirects must copy those cookies across.
+ */
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
 
-  // If Supabase is not configured, return a mock client
+  // Demo mode: without Supabase credentials the site runs unprotected.
   if (!isSupabaseConfigured()) {
-    return {
-      supabase: createMockSupabaseClient(),
-      response: supabaseResponse,
-    };
+    return supabaseResponse;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({
-          request,
-        });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
-      },
-    },
-  });
+    }
+  );
 
-  return { supabase, response: supabaseResponse };
-};
+  // Do not run code between createServerClient and getUser: getUser validates the
+  // token with Supabase Auth and triggers the cookie refresh above.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
+  const { pathname, search } = request.nextUrl;
+  if (!isProtectedPath(pathname)) {
+    return supabaseResponse;
+  }
+
+  if (!user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.search = '';
+    loginUrl.searchParams.set('redirect', `${pathname}${search}`);
+    return redirectWithCookies(loginUrl, supabaseResponse);
+  }
+
+  if (!user.email?.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN)) {
+    await supabase.auth.signOut();
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.search = '';
+    loginUrl.searchParams.set('error', 'Please sign in with your @udel.edu email.');
+    return redirectWithCookies(loginUrl, supabaseResponse);
+  }
+
+  return supabaseResponse;
+}
+
+function redirectWithCookies(url: URL, from: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  return redirect;
+}
