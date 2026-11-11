@@ -112,9 +112,10 @@ describe("Builder Path lessons and build cards", () => {
   it("open each lesson that has a concept check with the short version", () => {
     for (const stage of STAGES.filter((s) => s.questions.length > 0)) {
       expect(stage.lesson, `stage ${stage.id} lesson has no :::short block`).toMatch(/^:::short[ \t]*\r?$/m);
-      const html = renderLessonHtml(stage.lesson, { skipHref: "#concept-check" });
+      const html = renderLessonHtml(stage.lesson, { skipHref: "#build" });
       expect(html).toContain("The short version");
-      expect(html).toContain('href="#concept-check"');
+      expect(html).toContain('href="#build"');
+      expect(html).toContain("Go to the build card");
     }
   });
 
@@ -160,18 +161,24 @@ describe("Builder Path lessons and build cards", () => {
 });
 
 describe("Builder Path concept checks", () => {
-  it("point each question at a lesson heading the learner can find", () => {
-    // A missed question tells the learner which part to reread. That heading must exist outside the optional blocks.
+  it("point each question at a lesson heading or build card step the learner can find", () => {
+    // A missed question tells the learner which part to go back to. That heading must exist outside the optional
+    // blocks. "Build card, <step heading>" points at the build card; anything else points at the lesson.
+    const headingsOf = (markdown: string) =>
+      (mainText(markdown).match(/^#{1,3} .+$/gm) ?? []).map((line) => line.replace(/^#+ /, "").trim().toLowerCase());
+    const BUILD_PREFIX = "build card, ";
+
     for (const stage of STAGES) {
-      const headings = (mainText(stage.lesson).match(/^#{1,3} .+$/gm) ?? []).map((line) =>
-        line.replace(/^#+ /, "").trim().toLowerCase()
-      );
       for (const question of stage.questions) {
-        const section = question.concept.split(":")[0].trim().toLowerCase();
+        const concept = question.concept.toLowerCase();
+        const inBuild = concept.startsWith(BUILD_PREFIX);
+        const headings = headingsOf(inBuild ? stage.build : stage.lesson);
+        const section = (inBuild ? concept.slice(BUILD_PREFIX.length) : concept).split(":")[0].trim();
         const found = headings.some((heading) => heading === section || heading.startsWith(section));
-        expect(found, `stage ${stage.id} question ${question.id}: no lesson heading matches "${question.concept}"`).toBe(
-          true
-        );
+        expect(
+          found,
+          `stage ${stage.id} question ${question.id}: no ${inBuild ? "build card step" : "lesson heading"} matches "${question.concept}"`
+        ).toBe(true);
       }
     }
   });

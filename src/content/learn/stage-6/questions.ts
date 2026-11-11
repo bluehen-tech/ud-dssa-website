@@ -1,5 +1,6 @@
 import type { Question } from '@/lib/learn/types';
 
+/** Each question asks about the tours and the code found in the build card. */
 export const stage6Questions: Question[] = [
   {
     id: 's6-sign-in',
@@ -11,29 +12,42 @@ export const stage6Questions: Question[] = [
   {
     id: 's6-middleware',
     concept: 'Tour 1: Sign-in',
-    prompt: 'What keeps a signed-out visitor from opening /members/me?',
-    answer: 'middleware.ts checks for a session and sends them to the login page',
-    wrong: ['The page is hidden from the menu', 'GitHub blocks the address', 'Vercel asks for a password'],
+    prompt: 'Your session has ended, and you open bluehen-dssa.org/learn. What happens, and which file makes it happen?',
+    answer: 'You are sent to the login page, by middleware.ts',
+    wrong: [
+      'The page opens with no stages, by src/app/learn/page.tsx',
+      'Vercel shows an error page',
+      'GitHub asks you to sign in',
+    ],
   },
   {
     id: 's6-rls',
     concept: 'Tour 2: Row-level security',
-    prompt: 'Row-level security on member_portfolios lets you read your own draft but not anyone else\'s. Where does this rule run?',
-    answer: 'In the database, so it holds even if a page has a bug',
-    wrong: ['Only in the page\'s buttons', 'In your browser settings', 'On GitHub'],
+    prompt:
+      "A page on the site has a bug: it asks the database for every member's portfolio, drafts included. What does a signed-in member get back?",
+    answer: "The published portfolios and their own draft. The database's rules hold back everyone else's drafts.",
+    wrong: [
+      'Every draft, because the page asked for them',
+      'Nothing. The whole site stops working',
+      'An error from GitHub',
+    ],
   },
   {
     id: 's6-storage',
     concept: 'Tour 3: File storage',
-    prompt: 'Where is your portfolio photo kept?',
-    answer: "In Supabase Storage. Your row stores the photo's address.",
-    wrong: ['Inside your database row, as an image', 'In the GitHub repo', 'In your browser'],
+    prompt: 'In the photo upload code you found, the file is uploaded first. What is then saved in your portfolio row?',
+    answer: "The photo's web address",
+    wrong: ['The photo file itself', 'Your GitHub username', 'Nothing. The row does not change'],
   },
   {
     id: 's6-resend',
     concept: 'Tour 4: Email',
-    prompt: 'What does Resend do for the DSSA site?',
-    answer: 'Sends email, including sign-in codes and club emails',
-    wrong: ['Puts the site on the web', 'Stores member photos', 'Checks concept check answers'],
+    prompt: 'The Resend call you found sends a key with each message. Where does the code get that key?',
+    answer: 'From an environment variable set on Vercel. The key is not in the repo.',
+    wrong: [
+      'From a line typed into the route file',
+      "From an officer's GitHub account",
+      'From your sign-in code',
+    ],
   },
 ];

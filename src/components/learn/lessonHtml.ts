@@ -6,7 +6,7 @@ import { findWord } from '@/content/learn/glossary';
  * and build cards can use three things:
  *
  *   :::short            The short version: a box at the top of a lesson.
- *   - one idea          Everything the concept check asks is stated here.
+ *   - one idea          A learner who knows these skips to the build card.
  *   :::
  *
  *   :::more Title       Optional detail, closed until the learner opens it.
@@ -22,7 +22,7 @@ import { findWord } from '@/content/learn/glossary';
 export interface LessonHtmlOptions {
   /** Values for {{name}} placeholders. */
   replacements?: Record<string, string>;
-  /** When set, the short version ends with a link to this address (the concept check). */
+  /** When set, the short version ends with a link to this address (the build card). */
   skipHref?: string;
 }
 
@@ -81,7 +81,7 @@ function createMarked(skipHref?: string): Marked {
         const skip = skipHref
           ? `<div class="not-prose mt-3 text-sm"><a href="${escapeHtml(
               skipHref
-            )}" class="font-medium text-blue-primary underline">Know this already? Go to the concept check</a></div>`
+            )}" class="font-medium text-blue-primary underline">Know this already? Go to the build card</a></div>`
           : '';
         return `<div class="my-6 rounded-lg border-l-4 border-gold bg-blue-50 px-5 py-4"><div class="not-prose text-xs font-semibold uppercase tracking-wide text-blue-primary">The short version</div>${body}${skip}</div>\n`;
       }

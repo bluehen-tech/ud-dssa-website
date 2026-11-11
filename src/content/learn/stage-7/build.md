@@ -18,7 +18,11 @@ git commit -m "Change footer text"
 git push -u origin practice-pr
 ```
 
-On your repo page on GitHub, click **Compare & pull request**, then **Create pull request**. Read the diff on the **Files changed** tab. Then click **Merge pull request**.
+On your repo page on GitHub, click **Compare & pull request**, then **Create pull request**. Read the diff on the **Files changed** tab.
+
+Do this now: before you merge, open your `.vercel.app` site. The footer has not changed. Your change is on the `practice-pr` branch, and Vercel puts `main` live.
+
+Then click **Merge pull request**.
 
 Back in the terminal:
 
@@ -29,7 +33,7 @@ git pull
 
 The first line moves you back to `main`. The second downloads the merged change from GitHub.
 
-Do this now: open your `.vercel.app` site. The footer change should be live.
+Do this now: wait a minute or two, then refresh your `.vercel.app` site. The footer change should now be live.
 
 ## 2. Fork the DSSA repo
 
@@ -84,6 +88,7 @@ The checks run again on the same pull request.
 
 ## Done when
 
+- [ ] Your live site stayed the same until you merged the practice pull request
 - [ ] You merged a practice pull request in your own repo
 - [ ] The Action merged your tip pull request
 - [ ] Your tip is on the [Beginner Tips](/learn/tips) page

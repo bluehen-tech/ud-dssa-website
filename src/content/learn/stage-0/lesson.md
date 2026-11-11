@@ -44,9 +44,9 @@ By the end of the path you will have:
 
 Each stage has three parts:
 
-- A short lesson. It opens with the short version, a few lines that state the ideas. If you know them already, go straight to the check.
-- A concept check of 3 to 5 questions. You need every answer right to pass. You can retake it as many times as you like.
-- A build card. It unlocks when you pass. It lists the steps to do on your laptop and how you know you are done.
+- A short lesson. It opens with the short version, a few lines that state the ideas. If you know them already, go straight to the build card.
+- A build card. It lists the steps to do on your laptop, with a "Do this now" after each one so you can see it worked.
+- A concept check of 3 to 5 questions, after the build card. The questions ask about what you did and saw. You need every answer right to open the next stage. You can retake it as many times as you like.
 
 Two things help as you read:
 
@@ -55,4 +55,4 @@ Two things help as you read:
 
 This path is not for credit. Your member card shows how many stages you have cleared, such as "Builder Path 3 of 7".
 
-Do this now: click **Start the path** below. The build card for this stage will open.
+Do this now: read the build card below, tick its boxes, then click **Start the path**. Stage 1 will open.

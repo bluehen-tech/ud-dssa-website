@@ -1,36 +1,41 @@
 import type { Question } from '@/lib/learn/types';
 
+/** Each question asks about the build card. */
 export const stage4Questions: Question[] = [
   {
     id: 's4-file-to-route',
     concept: 'Files are pages',
-    prompt: 'Which file makes the page at /events?',
-    answer: 'src/app/events/page.tsx',
-    wrong: ['src/events.tsx', 'src/app/page.tsx', 'public/events.html'],
+    prompt: 'You want a page at localhost:3000/about. What do you add?',
+    answer: 'A folder named about inside src/app, with a page.tsx file in it',
+    wrong: [
+      'A file named about.tsx in the public folder',
+      'A new line at the end of src/app/page.tsx',
+      'A folder named about inside src/components',
+    ],
   },
   {
     id: 's4-component-props',
     concept: 'Components',
-    prompt: 'Every card on the DSSA members page has the same layout but shows a different person. Why?',
-    answer: 'Each card is the same component, given different props',
+    prompt: 'You want a second card on your home page, for a friend. What do you add?',
+    answer: "A second <MemberCard line on the home page, with your friend's details as its props",
     wrong: [
-      'An officer builds each card by hand',
-      'Each card is a separate page',
-      "Each member's photo sets the layout",
+      "A copy of MemberCard.tsx named FriendCard.tsx, with your friend's details typed inside it",
+      'A new page at /friend',
+      'A second photo named me.jpg',
     ],
   },
   {
     id: 's4-tailwind',
     concept: 'Styling with Tailwind CSS',
-    prompt: 'What does the Tailwind class font-bold do?',
-    answer: 'Makes text bold',
-    wrong: ['Makes text larger', 'Changes the font to a new one', 'Makes text blue'],
+    prompt: 'In step 3 you deleted one class from your card. What happens if you delete font-bold from a heading?',
+    answer: 'The heading is no longer bold. Nothing else changes.',
+    wrong: ['The heading disappears', 'The whole page loses its colors', 'The build fails'],
   },
   {
     id: 's4-data-file',
     concept: 'Lists in a data file',
-    prompt: 'You want to add a fourth event to your events page. Where do you make the change?',
-    answer: 'Add it to the list in src/data/events.ts',
-    wrong: ['Copy the events page and edit the copy', 'Add it to .env.local', 'Add it to the README'],
+    prompt: 'In step 5 you changed an event title in events.ts. Now you want a fourth event. Where do you add it?',
+    answer: 'To the list in src/data/events.ts',
+    wrong: ['In a copy of the events page', 'In .env.local', 'In the README'],
   },
 ];

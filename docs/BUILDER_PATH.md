@@ -1,6 +1,6 @@
 # Builder Path: officer guide
 
-The Builder Path at [bluehen-dssa.org/learn](https://bluehen-dssa.org/learn) is a self-paced beginner route into the DSSA stack. It opens once a member's portfolio is published with a photo. Each stage has a short lesson, a concept check, and a build card that unlocks when the check passes. Stage 7 ends with a pull request that adds one tip to the site, and that pull request merges on its own.
+The Builder Path at [bluehen-dssa.org/learn](https://bluehen-dssa.org/learn) is a self-paced beginner route into the DSSA stack. It opens once a member's portfolio is published with a photo. Each stage has a short lesson, a build card of hands-on steps, and then a concept check about what the learner did. Passing the check opens the next stage. Stage 7's build card ends with a pull request that adds one tip to the site, and that pull request merges on its own.
 
 Officers have no required step. Your work is watching and upkeep.
 
@@ -45,7 +45,7 @@ Already checked (November 2026): `main` has no branch protection or rulesets, so
 
 | You write | The learner sees |
 | --- | --- |
-| `:::short` ... `:::` | "The short version" box at the top of a lesson, with a link to the concept check for learners who know the topic. Every lesson with a concept check needs one. |
+| `:::short` ... `:::` | "The short version" box at the top of a lesson, with a link to the build card for learners who know the topic. Every lesson with a concept check needs one. |
 | `:::more Title` ... `:::` | A closed section marked Optional. It opens when clicked. Use it for file names, code, background and troubleshooting. |
 | `[[word]]` | The word with a dotted underline. Tapping it shows the definition from `glossary.ts`. |
 
@@ -59,8 +59,10 @@ Definitions are in `src/content/learn/glossary.ts`. Each entry has the word, oth
 
 Each question in `questions.ts` has an `id`, a `concept`, a `prompt`, one `answer` and three `wrong` choices. Choices are shuffled for each learner.
 
-- The `concept` is what a learner sees when they miss the question. Start it with the heading of the lesson section to reread. The test checks that the heading exists.
-- Ask only about the lesson's main text, never about something inside a `:::more` block.
+- The check comes after the build card. Ask about what the learner did and saw there, or have them predict, diagnose or decide something with it. Do not ask for a definition or command name lifted from the text. The four kinds of question, with examples, are in `VOICE.md` under "Build first, check last".
+- If a question needs something the learner has not seen, add a "Do this now" step to the build card first.
+- The `concept` is what a learner sees when they miss the question. Start it with the heading of the lesson section to go back to, or with `Build card, ` and a build card step heading. The test checks that the heading exists.
+- Never ask about something only inside a `:::more` block.
 - A learner must answer every question correctly to pass. Keep each check to 3 to 5 questions.
 - Keep an `id` the same when you reword a question, so its miss count in `/admin` carries over. Use a new `id` for a new question.
 
@@ -94,7 +96,7 @@ The workflow runs on `pull_request_target` when a pull request touches `src/data
 - the pull request changes exactly one file, in `src/data/tips/`;
 - the file name is the author's GitHub username plus `.json`, ignoring capital letters;
 - the file is JSON with only a `tip` field: plain text, 200 characters at most, no links, no HTML;
-- `GET /api/learn/eligible?username=<author>` says the author saved that username, passed the Stage 7 check, and is not blocked.
+- `GET /api/learn/eligible?username=<author>` says the author saved that username, has Stage 7 open (passed the Stage 6 check), and is not blocked. The gate is Stage 6, not Stage 7, because the tip pull request is in Stage 7's build card, which comes before Stage 7's check.
 
 It reads the file through the GitHub API and never checks out or runs code from the pull request. Do not add a checkout step to this workflow. A failed check leaves the pull request open with a comment naming the reason.
 

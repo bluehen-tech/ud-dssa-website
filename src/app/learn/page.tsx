@@ -26,7 +26,8 @@ export default async function LearnPage() {
         <h1 className="text-4xl font-bold text-blue-primary mb-2">Builder Path</h1>
         <p className="text-xl text-gray-600">
           Learn how bluehen-dssa.org works by building a small site of your own. You do not need any coding
-          experience. Each stage has a short lesson, a concept check, and a build card.
+          experience. Each stage has a short lesson, a build card of steps to try, and a concept check about what you
+          did.
         </p>
         <p className="mt-4 text-sm text-gray-500">
           Builder Path {cleared} of {COUNTED_STAGE_IDS.length}

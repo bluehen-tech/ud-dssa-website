@@ -22,7 +22,21 @@ git commit -m "Add MemberCard component"
 git push
 ```
 
-## 3. Add an events page
+## 3. Change the card by hand
+
+Keep localhost:3000 open next to Cursor so you can watch it.
+
+- Open `src/components/MemberCard.tsx`. Find a class on the name, such as `font-bold` or `text-blue-primary`. Delete that one class and save.
+
+Do this now: look at localhost:3000. The name should change in that one way, and nothing else should.
+
+- Open `src/app/page.tsx`. Find the line that starts with `<MemberCard`. Change the value of `major` to another subject and save.
+
+Do this now: look at localhost:3000. The card should show the new major.
+
+Put both changes back with **Ctrl+Z** (**Cmd+Z** on a Mac) and save each file. There is nothing to commit from this step.
+
+## 4. Add an events page
 
 Ask the agent:
 
@@ -30,7 +44,7 @@ Ask the agent:
 
 Do this now: open [localhost:3000/events](http://localhost:3000/events). You should see three cards.
 
-## 4. Change the data by hand
+## 5. Change the data by hand
 
 Open `src/data/events.ts` in the editor. Change one event title yourself and save.
 
@@ -47,6 +61,7 @@ git push
 ## Done when
 
 - [ ] Your member card shows on your home page
+- [ ] Removing one class and changing one prop each changed the card, and you put them back
 - [ ] /events shows a card per event, soonest first
 - [ ] Editing events.ts changed the page
 - [ ] Both changes are live on your `.vercel.app` site

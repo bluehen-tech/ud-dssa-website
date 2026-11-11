@@ -1,30 +1,43 @@
 import type { Question } from '@/lib/learn/types';
 
+/** Each question asks about the build card. */
 export const stage5Questions: Question[] = [
   {
     id: 's5-row',
     concept: 'Tables and rows',
-    prompt: 'On bluehen-dssa.org, what is your portfolio in the database?',
-    answer: 'One row in the member_portfolios table',
-    wrong: ['A separate table just for you', 'A file in the GitHub repo', 'One column in every table'],
+    prompt: 'Three people submit your sign-up form. What do you see when you open signups in Table Editor?',
+    answer: 'Three new rows, one per person, each with a name and an email',
+    wrong: ['Three new tables', 'One row with all three names in it', 'Three new columns'],
   },
   {
     id: 's5-api-route',
     concept: 'API routes',
-    prompt: 'Why does the Get Connected form send its data to an API route?',
-    answer: 'The route runs on the server, where it checks the data before saving a row',
+    prompt:
+      'Your signup route checks that the email contains @ before it saves a row. Why is that check in the route and not only in the form on the page?',
+    answer: 'The route runs on the server, where a visitor cannot change it',
     wrong: [
-      'Browsers cannot send data anywhere else',
-      'API routes make the page load faster',
-      'API routes change how the form looks',
+      'A page cannot check what people type',
+      'Checks in an API route make the form load faster',
+      'Vercel puts only API routes live',
     ],
   },
   {
     id: 's5-env',
     concept: 'Environment variables',
-    prompt: 'Where does your Supabase key go?',
-    answer: "In .env.local on your laptop, and in Vercel's environment variable settings",
-    wrong: ['In page.tsx, so the page can find it', 'In the README', 'In a commit message'],
+    prompt: 'Your form adds a row on localhost, but fails on your live site. What is the likely cause?',
+    answer: "The two values from .env.local were never added to Vercel's environment variable settings",
+    wrong: [
+      'Supabase does not accept forms from live sites',
+      'You need to push the same commit again',
+      'Your browser is out of date',
+    ],
+  },
+  {
+    id: 's5-restart',
+    concept: 'Build card, 3. Add your keys',
+    prompt: 'You paste your keys into .env.local while the site is running. The form still fails on localhost. What do you try first?',
+    answer: 'Stop the site with Ctrl+C and start it again with npm run dev',
+    wrong: ['Commit .env.local so the site can find it', 'Paste the keys into page.tsx', 'Delete the signups table'],
   },
   {
     id: 's5-paused',

@@ -12,13 +12,25 @@ Do this now: read the last lines. They should list your pages with no red error 
 Copy the whole error into the agent panel and ask what it means. Fix it before you go on. Vercel runs this same build, so an error here would also stop your site from going live.
 :::
 
-## 2. Create a Vercel account
+## 2. Break the build on purpose
+
+You will see a failed build once, on your laptop, so you know what one looks like. Nothing here is pushed.
+
+- Open `src/app/page.tsx` in the editor. Delete the last `}` at the end of the file and save.
+- Run `npm run build` again.
+
+Do this now: read the error. It names `page.tsx` and a line number near the end of the file.
+
+- Press **Ctrl+Z** (**Cmd+Z** on a Mac) in the editor to put the `}` back, and save.
+- Run `npm run build` once more. It should finish with no errors.
+
+## 3. Create a Vercel account
 
 - Go to [vercel.com](https://vercel.com) and click **Sign Up**.
 - Choose the free **Hobby** plan.
 - Choose **Continue with GitHub** and allow access.
 
-## 3. Import your repo
+## 4. Import your repo
 
 This step connects Vercel to your GitHub [[repo]]. You do it once.
 
@@ -30,7 +42,7 @@ After a minute or two, Vercel shows a web address that ends in `.vercel.app`.
 
 Do this now: open that address on your phone. You should see your name.
 
-## 4. Watch a push go live
+## 5. Watch a push go live
 
 Ask the agent:
 
@@ -46,13 +58,14 @@ git push
 
 Do this now: in Vercel, open your project and click **Deployments**. Watch the newest one go from Building to Ready. Then refresh your `.vercel.app` page. The new line should be there.
 
-## 5. Link it from your portfolio
+## 6. Link it from your portfolio
 
 Open [your portfolio](/members/me) on bluehen-dssa.org and add your `.vercel.app` address as your website link.
 
 ## Done when
 
 - [ ] `npm run build` finishes with no errors
+- [ ] You broke the build on purpose, read the error, and fixed it
 - [ ] Your `.vercel.app` address shows your name
 - [ ] A push updated the live site
 - [ ] Your portfolio links to your site

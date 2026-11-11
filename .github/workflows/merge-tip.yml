@@ -98,7 +98,7 @@ jobs:
               const reasons = {
                 'invalid-username': 'Your GitHub username could not be read.',
                 'unknown-username': `No Builder Path learner has saved the GitHub username \`${author}\`. Check the username saved in Stage 2 at bluehen-dssa.org/learn.`,
-                'stage-locked': 'Pass the Stage 7 concept check at bluehen-dssa.org/learn first, then push again to rerun this check.',
+                'stage-locked': 'Pass the Stage 6 concept check at bluehen-dssa.org/learn first, so Stage 7 is open, then push again to rerun this check.',
                 'blocked': 'Tips from this account are paused. An officer will review this pull request.',
               };
               try {

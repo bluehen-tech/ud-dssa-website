@@ -27,7 +27,7 @@ function HandoutCard() {
       <ol className="list-decimal space-y-1 pl-6 text-gray-800">
         <li>Sign in with your @udel.edu email.</li>
         <li>Publish your member portfolio with a photo. The path unlocks.</li>
-        <li>Work through seven stages at your own pace. Each has a short lesson, a concept check and a build card.</li>
+        <li>Work through seven stages at your own pace. Each has a short lesson, steps to try, and a short check on what you did.</li>
         <li>Finish by adding your own tip for beginners to the DSSA site.</li>
       </ol>
 

@@ -1,31 +1,39 @@
 import type { Question } from '@/lib/learn/types';
 
-/** Adapted from the Good Decisions Lane 1 bank for Station 1.2 (Git & GitHub). */
+/** Adapted from the Good Decisions Lane 1 bank for Station 1.2 (Git & GitHub). Each question asks about the build card. */
 export const stage2Questions: Question[] = [
   {
     id: 's2-git-vs-github',
-    concept: 'Why save versions: Git is on your laptop, GitHub is online',
-    prompt: 'Which statement is right?',
-    answer: 'Git saves versions on your laptop. GitHub keeps a copy of them online.',
+    concept: 'Why save versions',
+    prompt: 'You lose your laptop the day after you pushed. What can you get back from GitHub?',
+    answer: 'Every commit you pushed',
     wrong: [
-      'GitHub saves the versions. Git is the website that shows them.',
-      'Git and GitHub are two names for the same program.',
-      'Git is for code. GitHub is for documents.',
+      'Nothing. Git kept the project on your laptop only',
+      'Only the last file you changed',
+      'Everything, including changes you never committed',
     ],
   },
   {
     id: 's2-push',
-    concept: 'Five words: push',
-    prompt: 'You made a commit. When does it appear on GitHub?',
-    answer: 'After you run git push',
-    wrong: ['Right away. Commits are always online.', 'After you run git add', 'After you close Cursor'],
+    concept: 'Build card, 8. Make your first commit',
+    prompt: 'In step 8 you made a commit, then refreshed GitHub before you pushed. Why was your commit not there?',
+    answer: 'A commit stays on your laptop until you push it',
+    wrong: [
+      'GitHub takes about an hour to show new commits',
+      'The commit did not save',
+      'GitHub shows only the first commit in a repo',
+    ],
   },
   {
     id: 's2-diff-plus',
     concept: 'Reading a diff',
-    prompt: 'In a diff, what does a line that starts with + mean?',
-    answer: 'The line was added',
-    wrong: ['The line was removed', 'The line did not change', 'The line has an error'],
+    prompt: 'A diff shows these two lines. What changed?\n-  <h1>Your name here</h1>\n+  <h1>Jordan Lee</h1>',
+    answer: 'The heading changed from Your name here to Jordan Lee',
+    wrong: [
+      'The heading changed from Jordan Lee to Your name here',
+      'A second heading was added, and both now show',
+      'Nothing changed. The diff lists both lines for comparison',
+    ],
   },
   {
     id: 's2-secret-in-diff',
@@ -40,9 +48,13 @@ export const stage2Questions: Question[] = [
   },
   {
     id: 's2-commit-often',
-    concept: 'The everyday rhythm: commit after each change that works',
-    prompt: 'When should you commit?',
-    answer: 'After each small change that works',
-    wrong: ['Once, when the project is finished', 'Only when something breaks', 'Once a week'],
+    concept: 'Why save versions',
+    prompt: 'You make three changes and commit after each one. The third change breaks your site. What can you do because you committed?',
+    answer: 'Go back to the second commit, the last version that worked',
+    wrong: [
+      'Nothing. You undo the third change from memory',
+      'Start over from the template',
+      'Delete the repo and clone it again',
+    ],
   },
 ];

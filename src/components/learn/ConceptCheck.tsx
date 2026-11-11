@@ -24,12 +24,15 @@ export default function ConceptCheck({
   const [missedConcepts, setMissedConcepts] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Passing swaps this check for the build card without leaving the page. This component is removed
-  // at that moment, so that is when to bring the learner to the top, where the change is visible.
+  // Passing swaps this check for the "passed" block without leaving the page. This component is removed
+  // at that moment, so that is when to bring that block into view.
   const justPassed = useRef(false);
   useEffect(
     () => () => {
-      if (justPassed.current) window.scrollTo(0, 0);
+      if (!justPassed.current) return;
+      requestAnimationFrame(() =>
+        document.getElementById('stage-passed')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      );
     },
     []
   );
@@ -82,14 +85,15 @@ export default function ConceptCheck({
     <div id="concept-check" className="scroll-mt-24 bg-white p-6 sm:p-8 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-blue-primary mb-1">Concept check</h2>
       <p className="text-sm text-gray-600 mb-6">
-        Answer every question correctly to unlock the build card. You can retake it as many times as you like.
+        Answer these after you finish the build card. The questions ask about what you did and saw. Get every answer
+        right to open the next stage. You can retake it as many times as you like.
       </p>
 
       <ol className="space-y-6">
         {questions.map((q, index) => (
           <li key={q.id}>
             <fieldset>
-              <legend className="font-medium text-gray-900 mb-2">
+              <legend className="font-medium text-gray-900 mb-2 whitespace-pre-line">
                 {index + 1}. {q.prompt}
               </legend>
               <div className="space-y-2">
@@ -119,7 +123,7 @@ export default function ConceptCheck({
 
       {missedConcepts && (
         <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4" role="status">
-          <p className="font-medium text-amber-900 mb-1">Not yet. Reread these parts of the lesson, then try again:</p>
+          <p className="font-medium text-amber-900 mb-1">Not yet. Go back to these parts, then try again:</p>
           <ul className="list-disc pl-5 text-sm text-amber-900">
             {missedConcepts.map((concept) => (
               <li key={concept}>{concept}</li>

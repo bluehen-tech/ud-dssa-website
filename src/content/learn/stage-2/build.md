@@ -66,8 +66,23 @@ Read the diff. Accept it only if it changes the heading and nothing more.
 The first terminal is busy running the site. Click the **+** in the terminal panel to open a second one, then run:
 
 ```
+git diff
+```
+
+Do this now: find a line that starts with `-` and a line that starts with `+`. The `-` line is the old heading and the `+` line is your name. If the diff fills the terminal and stays open, press **q** to leave it.
+
+Save a commit:
+
+```
 git add -A
 git commit -m "Put my name on the home page"
+```
+
+Do this now: refresh your repo page on GitHub. Your commit is not there yet. It is saved on your laptop only.
+
+Now send it to GitHub:
+
+```
 git push
 ```
 
@@ -77,11 +92,12 @@ The first time you push, Git asks you to sign in to GitHub. Follow the prompt in
 Ask the agent: "Help me sign in to GitHub so git push works."
 :::
 
-Do this now: refresh your repo page on GitHub. Your commit message should appear at the top of the file list.
+Do this now: refresh your repo page on GitHub again. Your commit message should now appear at the top of the file list.
 
 ## Done when
 
 - [ ] Your GitHub username is saved below
 - [ ] `git --version` prints a version number
 - [ ] The starter runs at localhost:3000 with your name on it
-- [ ] Your commit appears on GitHub
+- [ ] You read the `-` and `+` lines in your diff
+- [ ] Your commit was missing from GitHub before you pushed, and there after

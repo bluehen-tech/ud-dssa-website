@@ -84,7 +84,7 @@ export default async function StagePage({ params }: { params: { stage: string } 
           id="lesson"
           content={stage.lesson}
           replacements={{ githubUsername: username || 'your-username' }}
-          skipHref={!passed && hasCheck ? '#concept-check' : undefined}
+          skipHref={!passed && hasCheck ? '#build' : undefined}
         />
       </div>
 
@@ -117,7 +117,7 @@ export default async function StagePage({ params }: { params: { stage: string } 
       <WordPopover />
 
       {passed ? (
-        // Once the check is passed, the build card is the work. The lesson folds away but stays one click off.
+        // Once the stage is passed, the lesson folds away but stays one click off.
         <details className="group bg-white rounded-lg shadow-lg">
           <summary className="flex cursor-pointer list-none items-center gap-3 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
             <span aria-hidden="true" className="text-blue-primary transition-transform group-open:rotate-90">
@@ -136,66 +136,79 @@ export default async function StagePage({ params }: { params: { stage: string } 
         <article className="bg-white p-6 sm:p-8 rounded-lg shadow-lg">{lesson}</article>
       )}
 
-      {!passed && <ConceptCheck stageId={stage.id} questions={toClientQuestions(stage.questions)} />}
+      <section
+        id="build"
+        className="scroll-mt-24 bg-white p-6 sm:p-8 rounded-lg shadow-lg border-t-4 border-blue-primary"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide text-blue-primary mb-4">
+          Build card{hasCheck && !passed ? '. Do these steps, then answer the concept check below.' : ''}
+        </p>
 
-      {passed && (
-        <section className="bg-white p-6 sm:p-8 rounded-lg shadow-lg border-t-4 border-blue-primary">
-          <p className="text-xs font-semibold uppercase tracking-wide text-green-700 mb-4">
-            {stage.questions.length > 0 ? 'Check passed. Build card unlocked.' : 'Build card'}
-          </p>
-
-          {stage.id === 7 && !username && (
-            <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              Save your GitHub username first. The steps below use it, and the tip check matches your file name
-              against it.
-            </div>
-          )}
-
-          <LessonMarkdown
-            id="build-card"
-            content={stage.build}
-            replacements={{ githubUsername: username || 'your-username' }}
-          />
-          <TickMemory targetId="build-card" storageKey={`learn-ticks:${state.userId}:${stage.id}`} />
-
-          {(stage.id === 2 || stage.id === 7) && (
-            <div className="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4">
-              <GithubUsernameForm current={state.githubUsername} />
-            </div>
-          )}
-
-          <div className="mt-8 border-t border-gray-200 pt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <Link href="/learn/words" className="text-blue-primary hover:underline">
-              Words
-            </Link>
-            <Link href="/learn/tips" className="text-blue-primary hover:underline">
-              Beginner Tips
-            </Link>
-            <Link href="/community" className="text-blue-primary hover:underline">
-              Questions? Ask on DataTalk
-            </Link>
-            <a
-              href={reportProblemUrl(stage.id, stage.title)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-primary hover:underline"
-            >
-              Report a problem with this step
-            </a>
-            <span className="text-gray-400">Steps last checked {stage.lastChecked}</span>
+        {stage.id === 7 && !username && (
+          <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Save your GitHub username first. The steps below use it, and the tip check matches your file name
+            against it.
           </div>
+        )}
 
-          {nextStage && (
-            <div className="mt-6">
-              <Link
-                href={`/learn/${nextStage.id}`}
-                className="inline-flex items-center px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors"
-              >
-                Next: Stage {nextStage.id}, {nextStage.title}
-              </Link>
-            </div>
+        <LessonMarkdown
+          id="build-card"
+          content={stage.build}
+          replacements={{ githubUsername: username || 'your-username' }}
+        />
+        <TickMemory targetId="build-card" storageKey={`learn-ticks:${state.userId}:${stage.id}`} />
+
+        {(stage.id === 2 || stage.id === 7) && (
+          <div className="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4">
+            <GithubUsernameForm current={state.githubUsername} />
+          </div>
+        )}
+
+        <div className="mt-8 border-t border-gray-200 pt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <Link href="/learn/words" className="text-blue-primary hover:underline">
+            Words
+          </Link>
+          <Link href="/learn/tips" className="text-blue-primary hover:underline">
+            Beginner Tips
+          </Link>
+          <Link href="/community" className="text-blue-primary hover:underline">
+            Questions? Ask on DataTalk
+          </Link>
+          <a
+            href={reportProblemUrl(stage.id, stage.title)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-primary hover:underline"
+          >
+            Report a problem with this step
+          </a>
+          <span className="text-gray-400">Steps last checked {stage.lastChecked}</span>
+        </div>
+      </section>
+
+      {passed ? (
+        <section
+          id="stage-passed"
+          className="scroll-mt-24 bg-white p-6 sm:p-8 rounded-lg shadow-lg border-l-4 border-green-600"
+        >
+          <p className="font-semibold text-green-700">
+            {hasCheck ? `Check passed. Stage ${stage.id} is cleared.` : 'You started the path.'}
+          </p>
+          {nextStage ? (
+            <Link
+              href={`/learn/${nextStage.id}`}
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-primary text-white font-medium rounded-md hover:bg-blue-800 transition-colors"
+            >
+              Next: Stage {nextStage.id}, {nextStage.title}
+            </Link>
+          ) : (
+            <Link href="/learn" className="mt-4 inline-block text-blue-primary font-medium hover:underline">
+              Back to the path map
+            </Link>
           )}
         </section>
+      ) : (
+        <ConceptCheck stageId={stage.id} questions={toClientQuestions(stage.questions)} />
       )}
     </LearnShell>
   );

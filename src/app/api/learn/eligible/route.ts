@@ -10,8 +10,10 @@ type Reason = 'invalid-username' | 'unknown-username' | 'stage-locked' | 'blocke
 /**
  * GET /api/learn/eligible?username=<github-username>
  * Public. Called by .github/workflows/merge-tip.yml before it merges a tip.
- * Answers whether this GitHub username belongs to a learner who has passed
- * the Stage 7 check and is not blocked from adding tips.
+ * Answers whether this GitHub username belongs to a learner who has reached
+ * Stage 7 (passed the stage before it) and is not blocked from adding tips.
+ * The tip pull request is part of Stage 7's build card, which comes before
+ * Stage 7's own check.
  */
 export async function GET(request: NextRequest) {
   const answer = (eligible: boolean, reason?: Reason) =>
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
       .from('learn_progress')
       .select('stage_id')
       .eq('user_id', profile.user_id)
-      .eq('stage_id', FINAL_STAGE_ID)
+      .eq('stage_id', FINAL_STAGE_ID - 1)
       .maybeSingle();
     if (progressError) throw progressError;
     if (!progress) return answer(false, 'stage-locked');

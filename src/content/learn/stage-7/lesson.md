@@ -38,7 +38,7 @@ A **GitHub Action** is an automatic job that GitHub runs when something happens 
 - The file is named with your GitHub username plus `.json`.
 - The file has only the `tip` value.
 - The tip is plain text, 200 characters at most, with no links and no formatting tags such as `<b>`.
-- Your GitHub username is the one you saved in Stage 2, and you have passed this stage's check.
+- Your GitHub username is the one you saved in Stage 2, and you have reached this stage.
 
 If every check passes, the Action merges your pull request and comments to say so. A few minutes later, your tip is on the Beginner Tips page and your member card shows **Contributor**.
 
