@@ -87,3 +87,31 @@ export const isDeadlinePassed = (deadline: string | null | undefined): boolean =
   return new Date(deadline) < new Date();
 };
 
+/**
+ * Picks the opportunities to feature on the home page.
+ *
+ * Open opportunities (no deadline, or a deadline still ahead) come first,
+ * newest post first. Closed ones only fill slots that are left over, most
+ * recently closed first, so the longer ago a deadline passed, the less likely
+ * the opportunity is to be shown.
+ */
+export const pickFeaturedOpportunities = (
+  opportunities: Opportunity[],
+  count: number,
+  now: Date = new Date()
+): Opportunity[] => {
+  const nowMs = now.getTime();
+  const time = (value?: string): number => (value ? new Date(value).getTime() : NaN);
+  const isClosed = (opportunity: Opportunity): boolean => time(opportunity.deadline) < nowMs;
+
+  return [...opportunities]
+    .sort((a, b) => {
+      const aClosed = isClosed(a);
+      const bClosed = isClosed(b);
+      if (aClosed !== bClosed) return aClosed ? 1 : -1;
+      if (aClosed) return time(b.deadline) - time(a.deadline);
+      return time(b.postedDate) - time(a.postedDate);
+    })
+    .slice(0, count);
+};
+

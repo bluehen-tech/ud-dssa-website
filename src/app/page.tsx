@@ -9,7 +9,7 @@ import { Opportunity, OpportunityType } from '@/types/opportunity';
 import { Event } from '@/types/event';
 import { createClient } from '@/lib/supabase-browser';
 import { useAuth } from '@/contexts/AuthContext';
-import { recordToOpportunity } from '@/utils/opportunityTransforms';
+import { pickFeaturedOpportunities, recordToOpportunity } from '@/utils/opportunityTransforms';
 import { QRCodeSVG } from 'qrcode.react';
 import { getBaseURL } from '@/lib/get-url';
 
@@ -84,15 +84,16 @@ export default function Home() {
         const { data, error } = await supabase
           .from('opportunities')
           .select('*')
-          .order('posted_at', { ascending: false })
-          .limit(3);
+          .order('posted_at', { ascending: false });
 
         if (error) {
           throw error;
         }
 
         if (isMounted) {
-          setOpportunities((data || []).map(recordToOpportunity));
+          // Fetch them all and choose here: the newest posts are not always the
+          // ones still open, so a database-side limit could hide open ones.
+          setOpportunities(pickFeaturedOpportunities((data || []).map(recordToOpportunity), 3));
         }
       } catch (fetchError) {
         console.error('Error fetching opportunities:', fetchError);
@@ -162,8 +163,7 @@ export default function Home() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  // Get the 3 most recent opportunities from Supabase
-  const recentOpportunities = opportunities.slice(0, 3);
+  const recentOpportunities = opportunities;
   const showMobileCTA = !authLoading && !session;
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
