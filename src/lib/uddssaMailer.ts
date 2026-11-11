@@ -13,6 +13,7 @@
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { markdownToEmailHtml } from "./emailMarkdown";
+import { signUnsubscribeToken } from "./unsubscribe-token";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,15 @@ const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
 
 const EMAIL_TEMPLATE_PATH = join(process.cwd(), "src", "emails", "udssa-recruitment-email.html");
 
+/** Where an email sits in a multi-email drip sequence (optional AI draft context). */
+export interface SequenceContext {
+  goal?: string;
+  stage: string;
+  stageIndex: number;
+  totalSteps: number;
+  previousSteps?: Array<{ stage: string; subject: string; body: string }>;
+}
+
 /** Structured intake fields used in ai_draft mode (mirrors the CLI prompts). */
 export interface AiDraftInput {
   type: string;
@@ -38,6 +48,7 @@ export interface AiDraftInput {
   cta: string;
   contact?: string;
   extras?: string;
+  sequence?: SequenceContext;
 }
 
 export interface GenerateEmailRequest {
@@ -99,7 +110,21 @@ Requirements:
 Return ONLY valid JSON. No markdown fences. No commentary outside the JSON.`;
 }
 
-function buildDraftUserMessage(input: AiDraftInput): string {
+function buildSequenceBlock(seq: SequenceContext): string {
+  const previous = (seq.previousSteps ?? [])
+    .map((p, i) => `  ${i + 1}. [${p.stage}] "${p.subject}"\n${p.body}`)
+    .join("\n");
+
+  return `
+SEQUENCE: This is email ${seq.stageIndex + 1} of ${seq.totalSteps} in a drip sequence for one event. Stage: ${seq.stage}.
+SEQUENCE GOAL: ${seq.goal || "(not specified)"}
+PREVIOUS EMAILS IN THIS SEQUENCE (already sent to the same people; do not repeat them verbatim, build on them):
+${previous || "  (none -- this is the first email)"}
+Use ONLY the facts given in DETAILS. Do not invent dates, times, locations, speakers, links, prizes or promises that are not stated there. If a detail is missing, leave it out instead of guessing.
+`;
+}
+
+export function buildDraftUserMessage(input: AiDraftInput): string {
   return `Write an email for UD-DSSA in Markdown format.
 
 TYPE: ${input.type}
@@ -109,7 +134,7 @@ DETAILS: ${input.details}
 CTA: ${input.cta}
 CONTACT: ${input.contact ?? ""}
 NOTES: ${input.extras ?? ""}
-
+${input.sequence ? buildSequenceBlock(input.sequence) : ""}
 Return ONLY JSON with keys "subject" and "body".
 The body MUST be written in Markdown format with appropriate headings, bold, lists, and emojis.
 Start with a greeting using {name} placeholder.
@@ -269,7 +294,10 @@ function buildUnsubscribeUrl(baseUrl: string | undefined, recipientEmail: string
   const encodedEmail = encodeURIComponent(recipientEmail);
   const encodedList = encodeURIComponent(list);
 
-  return `${normalizedUrl}/unsubscribe?email=${encodedEmail}&list=${encodedList}`;
+  const token = signUnsubscribeToken(recipientEmail, list);
+  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
+
+  return `${normalizedUrl}/unsubscribe?email=${encodedEmail}&list=${encodedList}${tokenParam}`;
 }
 
 function renderTemplate(template: string, values: Record<string, string>) {

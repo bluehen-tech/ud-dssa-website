@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-admin';
+import { verifyUnsubscribeToken } from '@/lib/unsubscribe-token';
 
 const VALID_UNSUBSCRIBE_LISTS = [
   'all',
@@ -39,7 +41,7 @@ function buildSourceMetadata(existingMetadata: any, list: UnsubscribeList) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, list } = await request.json();
+    const { email, list, token } = await request.json();
     
     if (!email) {
       return NextResponse.json(
@@ -50,7 +52,26 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const unsubscribeList = normalizeUnsubscribeList(list);
-    const supabase = createClient();
+
+    // Links minted by this server carry an HMAC token. When one is present it
+    // must verify; a verified request is authorised to write with the service
+    // role (the caller is anonymous). Tokenless legacy links keep working
+    // unless UNSUBSCRIBE_REQUIRE_TOKEN=true.
+    let supabase = createClient();
+    if (token) {
+      if (!verifyUnsubscribeToken(normalizedEmail, unsubscribeList, String(token))) {
+        return NextResponse.json(
+          { success: false, message: 'This unsubscribe link is invalid or has been altered.' },
+          { status: 403 }
+        );
+      }
+      supabase = createAdminClient();
+    } else if (process.env.UNSUBSCRIBE_REQUIRE_TOKEN === 'true') {
+      return NextResponse.json(
+        { success: false, message: 'This unsubscribe link is no longer supported. Please use the link in your most recent email.' },
+        { status: 403 }
+      );
+    }
 
     const { data: existingContact, error: fetchError } = await supabase
       .from('contacts')

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import RecipientPicker from "@/components/email/RecipientPicker";
 import MarkdownEditor from "@/components/email/MarkdownEditor";
 import EmailPreview from "@/components/email/EmailPreview";
+import { DRIP_STAGES, STAGE_PROMPTS, type DripStage } from "@/lib/drip";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,17 +72,6 @@ const EMPTY_DRAFT: AiDraftInput = {
   cta: "",
   contact: "",
   extras: "",
-};
-
-const STAGE_EXTRAS: Record<string, string> = {
-  "save-the-date":
-    "This is an early save-the-date announcement. Keep it brief and exciting -- just the title, date, and a teaser.",
-  "full-details":
-    "This is the full event announcement with all details.",
-  reminder:
-    "This is a reminder email for an upcoming event. Create urgency -- the event is soon!",
-  "last-chance":
-    "This is a last-chance/day-of email. Strong urgency, FOMO, final call to attend.",
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -300,7 +290,7 @@ function EmailPageContent() {
       audience: audience || "",
       cta: cta || "",
       contact: "",
-      extras: stage && STAGE_EXTRAS[stage] ? STAGE_EXTRAS[stage] : "",
+      extras: DRIP_STAGES.includes(stage as DripStage) ? STAGE_PROMPTS[stage as DripStage] : "",
     });
 
     if (draftType === "event" || draftType === "opportunity" || draftType === "announcement") {
@@ -365,6 +355,13 @@ function EmailPageContent() {
                 </p>
               </div>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/email/campaigns"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1B365D] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              Drip Campaigns
+            </Link>
             <Link
               href="/email/sent"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1B365D] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
@@ -374,6 +371,7 @@ function EmailPageContent() {
               </svg>
               Sent Emails
             </Link>
+            </div>
           </div>
         </div>
 

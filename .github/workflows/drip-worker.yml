@@ -1,0 +1,34 @@
+name: Drip Worker
+
+# Calls the drip dispatch endpoint on a schedule. See docs/DRIP_CAMPAIGNS_SETUP.md.
+# Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   DRIP_WORKER_URL  e.g. https://bluehen-dssa.org/api/cron/drip
+#   CRON_SECRET      the same value as the CRON_SECRET env var on the deployed site
+# Without both secrets the job exits successfully without doing anything.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: drip-worker
+  cancel-in-progress: false
+
+jobs:
+  run-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call drip worker
+        env:
+          DRIP_WORKER_URL: ${{ secrets.DRIP_WORKER_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$DRIP_WORKER_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "DRIP_WORKER_URL / CRON_SECRET not configured; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            -X POST -H "Authorization: Bearer $CRON_SECRET" \
+            "$DRIP_WORKER_URL"

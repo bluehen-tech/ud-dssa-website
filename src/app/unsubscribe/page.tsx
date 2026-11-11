@@ -21,6 +21,7 @@ function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const rawList = searchParams.get("list") || "all";
+  const token = searchParams.get("token") || "";
   const listLabel = {
     newsletter: "Newsletter",
     event: "Events",
@@ -48,7 +49,7 @@ function UnsubscribeContent() {
       const res = await fetch("/api/unsubscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, list: rawList }),
+        body: JSON.stringify({ email, list: rawList, token }),
       });
 
       const data = await res.json();
