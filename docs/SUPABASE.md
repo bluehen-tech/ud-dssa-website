@@ -13,6 +13,7 @@ This document consolidates all Supabase authentication setup, implementation, an
 3. [Magic Link Authentication](#magic-link-authentication)
 4. [Implementation Details](#implementation-details)
 5. [Database Setup](#database-setup)
+   - [Grants for New Tables](#grants-for-new-tables-required-since-oct-30-2026)
 6. [Troubleshooting](#troubleshooting)
 
 ---
@@ -377,6 +378,21 @@ CREATE POLICY "Users can update own profile"
 
 **🔒 Security Note:** These RLS policies prevent users from promoting themselves to admin or changing their email. Only database administrators (via Supabase dashboard or service role) can modify `admin_flag` and `email` fields.
 
+### Grants for New Tables (required since Oct 30, 2026)
+
+Supabase no longer automatically grants Data API access to new tables in the `public` schema. Tables that existed before Oct 30, 2026 keep their grants and are unaffected. Any table created after that date (including when re-running the setup SQL in a fresh project) needs an explicit `GRANT` in the same SQL that creates it. Without it, supabase-js and PostgREST return `permission denied for table <name>` (code `42501`), even when the RLS policies are correct.
+
+Add this right after each `CREATE TABLE`:
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.<table_name>
+  TO anon, authenticated, service_role;
+```
+
+The grant only lets each role reach the table through the API; RLS policies still decide which rows each role can read or change. This site uses all three roles: `anon` (browser client before login), `authenticated` (logged-in members), and `service_role` (`src/lib/supabase-admin.ts`).
+
+The older setup docs in this folder (events, opportunities, applications, community, sent emails, member portfolios) were written before this change and do not include the grant. Add the line above for each table when running them in a new project.
+
 ### Making a User Admin
 
 **Via SQL:**
@@ -476,6 +492,14 @@ SET admin_flag = true;
 - AuthContext (session initialization)
 
 **Solution:** Use a valid @udel.edu email address.
+
+### Permission Denied on a New Table
+
+**Error:** `permission denied for table <name>` (code `42501`) from supabase-js, on a table that was just created.
+
+**Cause:** The table was created after Oct 30, 2026 without an explicit `GRANT`, so the API roles can't reach it regardless of RLS policies.
+
+**Solution:** Run the grant from [Grants for New Tables](#grants-for-new-tables-required-since-oct-30-2026) in the SQL Editor for that table.
 
 ---
 

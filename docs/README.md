@@ -42,6 +42,8 @@ New to the project? Start here:
 
 Located in `/supabase` directory:
 
+> **Creating a new table?** Since Oct 30, 2026, Supabase requires an explicit `GRANT` for every new table in `public`. See [SUPABASE.md > Grants for New Tables](./SUPABASE.md#grants-for-new-tables-required-since-oct-30-2026).
+
 - **[MUST_RUN_THIS.sql](../supabase/MUST_RUN_THIS.sql)**
   - Quick setup script for profiles table
   - RLS policies
