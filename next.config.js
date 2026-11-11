@@ -8,7 +8,11 @@ const nextConfig = {
     // scripts in supabase/RESUME_UPLOADS_SETUP.sql, the errors will resolve.
     ignoreBuildErrors: true,
   },
+  webpack(config) {
+    // Builder Path lessons are markdown files imported as plain strings.
+    config.module.rules.push({ test: /\.md$/, type: 'asset/source' });
+    return config;
+  },
 };
 
 module.exports = nextConfig;
- 

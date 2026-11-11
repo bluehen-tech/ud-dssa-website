@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import BuilderPathAdmin from "@/components/learn/BuilderPathAdmin";
 
 interface UserProfile {
   id: string;
@@ -526,6 +527,8 @@ export default function AdminPage() {
             })
           )}
         </div>
+
+        <BuilderPathAdmin onToast={showToast} />
 
         {/* Footer */}
         <div className="text-center pt-6">

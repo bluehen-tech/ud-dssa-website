@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { dbRowToMemberPortfolio } from '@/lib/memberPortfolioUtils';
+import { getBuilderBadges } from '@/lib/learn/badges';
 import type { MemberPortfolio, MemberPortfolioRow, MemberRole } from '@/types/member';
 
 const OFFICER_POSITION_PRIORITY = [
@@ -83,8 +84,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Failed to fetch portfolios' }, { status: 500 });
     }
 
+    const memberRows = (rows ?? []) as MemberPortfolioRow[];
+    const badges = await getBuilderBadges(memberRows.map((row) => row.user_id));
     const portfolios = sortPortfolios(
-      (rows ?? []).map((row) => dbRowToMemberPortfolio(row as MemberPortfolioRow))
+      memberRows.map((row) => ({ ...dbRowToMemberPortfolio(row), builder: badges.get(row.user_id) }))
     );
     return NextResponse.json({ success: true, portfolios });
   } catch (err) {

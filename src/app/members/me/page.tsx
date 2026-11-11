@@ -454,6 +454,10 @@ export default function MyPortfolioPage() {
   const status = portfolio?.status;
   const canEdit = !portfolio || status === 'draft' || status === 'rejected' || status === 'published';
   const isPublished = status === 'published';
+  const savedPhotoUrl =
+    (typeof portfolio?.profile_image_url === 'string' && portfolio.profile_image_url.trim()) ||
+    portfolio?.display?.profileImageUrl?.trim() ||
+    '';
 
   const previewPortfolio = useMemo(
     () => buildPreviewPortfolio(formData, portfolio?.id ?? null, session?.user?.email),
@@ -1141,6 +1145,38 @@ export default function MyPortfolioPage() {
               </Link>
               .
             </p>
+          </div>
+        )}
+
+        {portfolio && isPublished && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {savedPhotoUrl ? (
+              <>
+                <div>
+                  <p className="font-medium text-blue-primary">The Builder Path is open</p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    A self-paced route into the tools behind this site. Seven short stages, each with a lesson and a build.
+                  </p>
+                </div>
+                <Link
+                  href="/learn"
+                  className="shrink-0 px-4 py-2 bg-blue-primary text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors text-center"
+                >
+                  Start the Builder Path
+                </Link>
+              </>
+            ) : (
+              <div>
+                <p className="font-medium text-blue-primary">One step from the Builder Path</p>
+                <p className="text-sm text-gray-700 mt-1">
+                  Add a profile photo and save. The{' '}
+                  <Link href="/learn" className="underline">
+                    Builder Path
+                  </Link>{' '}
+                  opens once your portfolio is live with a photo.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

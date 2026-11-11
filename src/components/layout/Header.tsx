@@ -81,6 +81,14 @@ function MoreDropdown({
             Contacts
           </Link>
 
+          <Link
+            href="/learn"
+            onClick={closeMenu}
+            className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-primary"
+          >
+            Builder Path
+          </Link>
+
           {(isAdmin || hasEmailAccess) && (
             <Link
               href="/email"
@@ -128,7 +136,10 @@ export default function Header() {
   };
 
   const mobileMoreItems = useMemo(() => {
-    const items = [{ label: "Contacts", href: "/contacts" }];
+    const items = [
+      { label: "Contacts", href: "/contacts" },
+      { label: "Builder Path", href: "/learn" },
+    ];
     if (isAdmin || hasEmailAccess) items.push({ label: "Email", href: "/email" });
     if (isAdmin) items.push({ label: "Admin", href: "/admin" });
     return items;

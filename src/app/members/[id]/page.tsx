@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MemberPortfolio, MemberRole } from '@/types/member';
+import BuilderBadge from '@/components/learn/BuilderBadge';
 
 interface PortfolioApiResponse {
   success: boolean;
@@ -153,6 +154,11 @@ export default function MemberDetailPage() {
             {portfolio.tagline && <p className="text-gray-600 mt-2">{portfolio.tagline}</p>}
             {portfolio.major && <p className="text-sm text-gray-500 mt-1">{portfolio.major}</p>}
             {portfolio.graduationDate && <p className="text-sm text-gray-500">{portfolio.graduationDate}</p>}
+            {portfolio.builder && (
+              <div className="mt-3">
+                <BuilderBadge badge={portfolio.builder} size="md" />
+              </div>
+            )}
           </div>
 
           {portfolio.bio && (

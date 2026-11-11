@@ -149,6 +149,20 @@ function MemberCard({ member }: { member: MemberPortfolio }) {
   return (
     <article className="member-card relative isolate flex h-[30rem] w-full max-w-[22rem] min-w-0 flex-col rounded-2xl border border-gray-200 p-6 shadow-md">
       <div aria-hidden="true" className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-gradient-to-r from-blue-primary via-blue-400 to-gold" />
+      {member.builder && member.builder.level > 0 && (
+        <span
+          title={`Builder Path ${member.builder.level} of ${member.builder.total}`}
+          className="absolute left-3 top-3 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-primary"
+        >
+          <span aria-hidden="true">Builder {member.builder.level}/{member.builder.total}</span>
+          <span className="sr-only">Builder Path {member.builder.level} of {member.builder.total}</span>
+        </span>
+      )}
+      {member.builder?.contributor && (
+        <span className="absolute right-3 top-3 rounded-full bg-gold/30 px-2 py-0.5 text-[11px] font-medium text-gray-900">
+          Contributor
+        </span>
+      )}
       <div className="mb-4 flex h-40 shrink-0 flex-col items-center text-center">
         {member.profileImageUrl ? (
           <div className="member-card-avatar mb-2 h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gray-200 ring-4 ring-white shadow-md">

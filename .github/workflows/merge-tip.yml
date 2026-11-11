@@ -1,0 +1,155 @@
+name: Merge beginner tip
+
+# Checks Builder Path tip pull requests (Stage 7) and merges them when every
+# check passes. Runs on pull_request_target so it can merge pull requests
+# from forks. Because that event has write access, this workflow must never
+# check out or run code from the pull request. It reads the one changed file
+# through the GitHub API as data.
+#
+# Tip rules match validateTipText in src/lib/learn/tips.ts. Keep them in step.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+    paths:
+      - 'src/data/tips/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: merge-tip-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the tip and merge it
+        uses: actions/github-script@v7
+        env:
+          SITE_URL: ${{ vars.BUILDER_PATH_SITE_URL || 'https://bluehen-dssa.org' }}
+          TIPS_WEBHOOK_SECRET: ${{ secrets.TIPS_WEBHOOK_SECRET }}
+        with:
+          script: |
+            const MAX_LENGTH = 200;
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const author = pr.user.login;
+            const expectedPath = `src/data/tips/${author.toLowerCase()}.json`;
+            const failures = [];
+
+            const comment = (body) =>
+              github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body });
+
+            if (pr.state !== 'open') return;
+            if (pr.base.ref !== 'main') {
+              failures.push('The pull request must target the `main` branch.');
+            }
+            if (!pr.head.repo) {
+              failures.push('The branch for this pull request no longer exists. Open a new pull request from your fork.');
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+
+            if (files.length !== 1) {
+              failures.push(`This pull request changes ${files.length} files. A tip pull request changes exactly one file: \`${expectedPath}\`.`);
+            } else if (pr.head.repo) {
+              const file = files[0];
+              if (file.status !== 'added' && file.status !== 'modified') {
+                failures.push('The tip file must be added or changed, not removed or renamed.');
+              } else if (file.filename.toLowerCase() !== expectedPath || file.filename.includes('/_')) {
+                failures.push(`The file must be named \`${expectedPath}\`, using your GitHub username. This pull request changes \`${file.filename}\`.`);
+              } else {
+                const { data } = await github.rest.repos.getContent({
+                  owner: pr.head.repo.owner.login,
+                  repo: pr.head.repo.name,
+                  path: file.filename,
+                  ref: pr.head.sha,
+                });
+                const raw = Buffer.from(data.content || '', 'base64').toString('utf8');
+                let parsed;
+                try {
+                  parsed = JSON.parse(raw);
+                } catch {
+                  failures.push('The file is not valid JSON. Check that the tip is inside double quotes and the file starts with { and ends with }.');
+                }
+                if (parsed !== undefined) {
+                  const keys = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? Object.keys(parsed) : null;
+                  if (!keys || keys.length !== 1 || keys[0] !== 'tip') {
+                    failures.push(`The file must have one field, named "tip". It has: ${keys && keys.length ? keys.join(', ') : 'no fields'}.`);
+                  } else if (typeof parsed.tip !== 'string' || !parsed.tip.trim()) {
+                    failures.push('The "tip" field is empty or is not text.');
+                  } else {
+                    const tip = parsed.tip.trim();
+                    if (tip.length > MAX_LENGTH) failures.push(`The tip is ${tip.length} characters. The limit is ${MAX_LENGTH}.`);
+                    if (/[<>]/.test(tip)) failures.push('The tip contains < or >. Use plain text, with no HTML.');
+                    if (/https?:\/\/|www\.|\]\(/i.test(tip)) failures.push('The tip contains a link. Links are not allowed.');
+                  }
+                }
+              }
+            }
+
+            if (failures.length === 0) {
+              const reasons = {
+                'invalid-username': 'Your GitHub username could not be read.',
+                'unknown-username': `No Builder Path learner has saved the GitHub username \`${author}\`. Check the username saved in Stage 2 at bluehen-dssa.org/learn.`,
+                'stage-locked': 'Pass the Stage 7 concept check at bluehen-dssa.org/learn first, then push again to rerun this check.',
+                'blocked': 'Tips from this account are paused. An officer will review this pull request.',
+              };
+              try {
+                const res = await fetch(`${process.env.SITE_URL}/api/learn/eligible?username=${encodeURIComponent(author)}`);
+                const result = await res.json();
+                if (!result.eligible) {
+                  failures.push(reasons[result.reason] || 'The site could not confirm you are a Builder Path learner. Try again later.');
+                }
+              } catch (err) {
+                failures.push('The DSSA site did not answer. Close and reopen this pull request in a few minutes to run the checks again.');
+              }
+            }
+
+            if (failures.length > 0) {
+              await comment([
+                'Thanks for your tip. It cannot be merged yet:',
+                '',
+                ...failures.map((f) => `- ${f}`),
+                '',
+                'Fix the file on the same branch, commit, and push. The checks run again on their own.',
+              ].join('\n'));
+              core.setFailed(failures.join(' '));
+              return;
+            }
+
+            try {
+              await github.rest.pulls.merge({
+                owner, repo, pull_number: pr.number,
+                sha: pr.head.sha,
+                merge_method: 'squash',
+                commit_title: `Add beginner tip from @${author} (#${pr.number})`,
+              });
+            } catch (err) {
+              await comment('Every check passed, but this pull request could not be merged automatically. An officer will merge it.');
+              core.setFailed(`Merge failed: ${err.message}`);
+              return;
+            }
+
+            await comment('Every check passed and your tip is merged. It will show on the Beginner Tips page at bluehen-dssa.org/learn/tips in a few minutes, and your member card will show Contributor.');
+
+            if (process.env.TIPS_WEBHOOK_SECRET) {
+              try {
+                await fetch(`${process.env.SITE_URL}/api/learn/tips/merged`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${process.env.TIPS_WEBHOOK_SECRET}`,
+                  },
+                  body: JSON.stringify({ username: author }),
+                });
+              } catch (err) {
+                core.warning(`Could not record the merge time: ${err.message}`);
+              }
+            }

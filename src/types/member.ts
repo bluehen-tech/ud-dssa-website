@@ -144,5 +144,13 @@ export interface MemberPortfolio {
   }[];
   interests?: string[]; // Array of interests
   graduationYear?: number; // For alumni (deprecated, use graduationDate instead)
+  builder?: BuilderBadge; // Builder Path progress, set by the API (not member-editable)
+}
+
+/** Builder Path badge: stages cleared, and whether the member's tip is merged. */
+export interface BuilderBadge {
+  level: number;
+  total: number;
+  contributor: boolean;
 }
 
